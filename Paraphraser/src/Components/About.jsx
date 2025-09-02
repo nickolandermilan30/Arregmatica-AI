@@ -1,8 +1,25 @@
-import { BookOpen, RefreshCw, Cpu, ClipboardList, Moon } from "lucide-react"; // ✅ icons
+import { BookOpen, RefreshCw, Cpu, ClipboardList } from "lucide-react"; // ✅ icons
+import aviona from "../assets/Student/aviona.png";
+import curl from "../assets/Student/Curl Joseph.png";
+import ivan from "../assets/Student/Ivan Barnedo.png";
+import jm from "../assets/Student/Jm.png";
+import rey from "../assets/Student/Rey Adrian.png";
+import rinoa from "../assets/Student/Rinoa.png";
+import ruzzel from "../assets/Student/Ruzzel.png";
 
 const About = () => {
+  const teamMembers = [
+    { name: "Princess Aviona Amad", image: aviona },
+    { name: "Ivan Barnedo", image: ivan },
+    { name: "Jm Bendanillo", image: jm },
+    { name: "Ruzzel Polinar", image: ruzzel },
+    { name: "Rey Adrian Porras", image: rey },
+    { name: "Rinoa Amber Torrecampo", image: rinoa },
+    { name: "Curl Joseph Villanueva", image: curl },
+  ];
+
   return (
-    <div className="px-6 md:px-16 py-10  dark:text-gray-900 bg-white  min-h-screen">
+    <div className="px-6 md:px-16 py-10 dark:text-gray-900 bg-white min-h-screen">
       {/* Title */}
       <h1 className="text-center text-4xl font-bold mb-12">About Us</h1>
 
@@ -75,41 +92,32 @@ const About = () => {
               Practice grammar knowledge with interactive quizzes.
             </p>
           </div>
-
-         
         </div>
       </div>
 
-     {/* Team Section */}
-<div className="mt-16">
-  <h2 className="text-center text-3xl font-bold mb-8">Our Team</h2>
-  
-  <div className="flex justify-center">
-    <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {[
-        "Princess Aviona Amad",
-        "Ivan Barnedo",
-        "Jm Bendanillo",
-        "Ruzzel Polinar",
-        "Rey Adrian Porras",
-        "Rinoa Amber Torrecampo",
-        "Curl Joseph Villanueva",
-      ].map((name, index) => (
-        <div
-          key={index}
-          className="bg-white dark:bg-gray-200 rounded-xl shadow-md p-6 text-center hover:scale-105 transition-transform"
-        >
-          <div className="w-16 h-16 mx-auto bg-sky-500 text-white rounded-full flex items-center justify-center text-xl font-bold mb-3">
-            {name.charAt(0)}
-          </div>
-          <p className="font-medium">{name}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-</div>
-</div>
+      {/* Team Section */}
+      <div className="mt-16">
+        <h2 className="text-center text-3xl font-bold mb-8">Our Team</h2>
 
+        <div className="flex justify-center">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {teamMembers.map((member, index) => (
+              <div
+                key={index}
+                className="bg-white dark:bg-gray-200 rounded-xl shadow-md p-6 text-center hover:scale-105 transition-transform"
+              >
+                <img
+                  src={member.image}
+                  alt={member.name}
+                  className="w-24 h-24 mx-auto rounded-full mb-3 object-cover"
+                />
+                <p className="font-medium">{member.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
