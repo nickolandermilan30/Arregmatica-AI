@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { FaSearch } from "react-icons/fa"; 
 import { GoogleGenAI } from "@google/genai";
-import AIImage from "../assets/AI.jpg";       // path to your AI image
-import UserImage from "../assets/userdp.png"; // path to your user image
+import { BookOpen, CheckCircle, Quote, Info } from "lucide-react"; // ✅ icons
+import AIImage from "../assets/AI.jpg";
+import UserImage from "../assets/userdp.png";
 
 const Services = () => {
   const [query, setQuery] = useState("");
@@ -37,11 +38,47 @@ const Services = () => {
       console.error(error);
       setResponses((prev) => [
         ...prev,
-        { role: "ai", content: "Sorry, I couldn't process your request." },
+        { role: "ai", content: "❌ Sorry, I couldn't process your request." },
       ]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Format AI Response with icons + bullets
+  const renderFormattedResponse = (text) => {
+    return text.split("\n").map((line, idx) => {
+      if (line.toLowerCase().includes("meaning") || line.toLowerCase().includes("definition")) {
+        return (
+          <div key={idx} className="flex items-start space-x-2 mb-1">
+            <BookOpen className="text-blue-600 mt-1" size={18} />
+            <span className="font-semibold">{line}</span>
+          </div>
+        );
+      } else if (line.toLowerCase().includes("example")) {
+        return (
+          <div key={idx} className="flex items-start space-x-2 mb-1">
+            <Quote className="text-green-600 mt-1" size={18} />
+            <span className="italic">{line}</span>
+          </div>
+        );
+      } else if (line.startsWith("•") || line.startsWith("-")) {
+        return (
+          <div key={idx} className="flex items-start space-x-2 mb-1">
+            <CheckCircle className="text-sky-500 mt-1" size={18} />
+            <span>{line.replace(/^[-•]\s*/, "")}</span>
+          </div>
+        );
+      } else if (line.trim() !== "") {
+        return (
+          <div key={idx} className="flex items-start space-x-2 mb-1">
+            <Info className="text-gray-500 mt-1" size={18} />
+            <span>{line}</span>
+          </div>
+        );
+      }
+      return null;
+    });
   };
 
   return (
@@ -54,7 +91,7 @@ const Services = () => {
         {/* Left Box: Chat / History */}
         <div className="col-span-2 flex flex-col h-[650px] md:h-[550px]">
           <div className="flex-1 border-2 border-gray-300 rounded-2xl bg-white p-6 shadow-lg overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4"> Chat Arregmatica AI</h2>
+            <h2 className="text-2xl font-bold mb-4">Chat Arregmatica AI</h2>
             <div className="space-y-4">
               {responses.map((msg, index) => (
                 <div
@@ -74,14 +111,16 @@ const Services = () => {
 
                   {/* Chat bubble */}
                   <div
-                    className={`max-w-full md:max-w-xs p-4 rounded-xl shadow-md break-words ${
+                    className={`max-w-full md:max-w-xs p-4 rounded-xl shadow-md ${
                       msg.role === "user"
                         ? "bg-blue-100 text-right"
                         : "bg-gray-100 text-left"
                     }`}
                     style={{ whiteSpace: "pre-line" }}
                   >
-                    {msg.content}
+                    {msg.role === "ai"
+                      ? renderFormattedResponse(msg.content) // ✅ AI bubble with icons
+                      : msg.content}
                   </div>
 
                   {/* User avatar */}
@@ -121,18 +160,14 @@ const Services = () => {
           <div className="flex-1 border-2 border-gray-300 rounded-2xl bg-white p-6 shadow-lg overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">AI Response</h2>
             {loading ? (
-              <p className="text-gray-500 italic">AI is thinking…</p>
+              <p className="text-gray-500 italic">⏳ AI is thinking…</p>
             ) : responses.filter((r) => r.role === "ai").length > 0 ? (
               responses
                 .filter((r) => r.role === "ai")
                 .map((msg, index) => (
-                  <p
-                    key={index}
-                    className="mb-4"
-                    style={{ whiteSpace: "pre-line" }}
-                  >
-                    {msg.content}
-                  </p>
+                  <div key={index} className="mb-4">
+                    {renderFormattedResponse(msg.content)}
+                  </div>
                 ))
             ) : (
               <p className="text-gray-400 italic">

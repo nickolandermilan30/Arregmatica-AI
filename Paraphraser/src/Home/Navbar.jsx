@@ -1,67 +1,144 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react"; // ✅ burger & close icons
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, ChevronDown } from "lucide-react";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase";
 import logo from "../assets/logo.jpg";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [user, setUser] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Listen for logged-in user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // ✅ Auto-close sidebar kapag nag-resize to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <>
       {/* Navbar */}
-      <nav className="bg-white px-6 py-3 flex items-center justify-between ">
-        {/* Logo (Left) */}
-        <Link to="/" className="flex-shrink-0">
-          <img
-            src={logo}
-            alt="Logo"
-            className="h-14 w-auto object-contain"
-          />
+      <nav className="bg-white px-6 py-3 flex items-center justify-between">
+        {/* Logo (Left side) */}
+        <Link to="/home" className="flex-shrink-0">
+          <img src={logo} alt="Logo" className="h-14 w-auto object-contain" />
         </Link>
 
-        {/* Links (Center) - hidden on mobile */}
+        {/* Links - Desktop (Centered) */}
         <div className="hidden md:flex flex-1 justify-center">
-          <div className="space-x-10 text-lg font-medium">
-            <Link to="/" className="text-gray-700 hover:text-blue-500 transition-colors">
+          <div className="flex space-x-10 text-lg font-medium">
+            <Link to="/home" className="text-gray-700 hover:text-blue-500">
               Home
             </Link>
-            <Link to="/services" className="text-gray-700 hover:text-blue-500 transition-colors">
+            <Link to="/services" className="text-gray-700 hover:text-blue-500">
               Arregmatica AI
             </Link>
-            <Link to="/about" className="text-gray-700 hover:text-blue-500 transition-colors">
+            <Link to="/history" className="text-gray-700 hover:text-blue-500">
+              History
+            </Link>
+            <Link to="/dictionary" className="text-gray-700 hover:text-blue-500">
+              Dictionary
+            </Link>
+            <Link to="/about" className="text-gray-700 hover:text-blue-500">
               About
             </Link>
           </div>
         </div>
 
-        {/* Button (Right) - hidden on mobile */}
-        <div className="hidden md:block">
+        {/* Right Side - Desktop */}
+        <div className="hidden md:flex items-center gap-4 relative">
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition"
+              >
+                <span className="text-gray-700 font-medium">
+                  {user.displayName || user.email}
+                </span>
+                <ChevronDown size={18} className="text-gray-600" />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowModal(true);
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <Link
             to="/quiz"
-            className="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors shadow-md"
+            className="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
           >
             Take Quiz
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Burger - Mobile */}
         <button
-          className="md:hidden text-sky-500 focus:outline-none" // ✅ Sky blue icon
+          className="md:hidden text-sky-500 focus:outline-none"
           onClick={() => setIsOpen(true)}
         >
           <Menu size={28} />
         </button>
       </nav>
 
-      {/* Blurred Background Overlay */}
-      <div
-        className={`fixed inset-0 z-40 transition-opacity duration-300 backdrop-blur-sm ${
-          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        }`}
-        onClick={() => setIsOpen(false)}
-      ></div>
+      {/* ✅ Overlay + Sidebar for Mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-      {/* Sidebar (Mobile Menu) */}
       <div
         className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "translate-x-full"
@@ -75,37 +152,101 @@ const Navbar = () => {
         </div>
 
         <div className="flex flex-col p-4 space-y-4 text-lg">
-          <Link
-            to="/"
-            className="text-gray-700 hover:text-blue-500 transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
+          <Link to="/home" onClick={() => setIsOpen(false)}>
             Home
           </Link>
-          <Link
-            to="/services"
-            className="text-gray-700 hover:text-blue-500 transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
+          <Link to="/services" onClick={() => setIsOpen(false)}>
             Arregmatica AI
           </Link>
-          <Link
-            to="/about"
-            className="text-gray-700 hover:text-blue-500 transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
+          <Link to="/history" onClick={() => setIsOpen(false)}>
+            History
+          </Link>
+          <Link to="/dictionary" onClick={() => setIsOpen(false)}>
+            Dictionary
+          </Link>
+          <Link to="/about" onClick={() => setIsOpen(false)}>
             About
           </Link>
-
           <Link
             to="/quiz"
-            className="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md text-center"
+            className="bg-sky-500 text-white px-4 py-2 rounded-lg text-center"
             onClick={() => setIsOpen(false)}
           >
             Take Quiz
           </Link>
+
+          {/* ✅ User dropdown sa Mobile */}
+          {user && (
+            <div className="mt-6 border-t pt-4">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+              >
+                <span className="text-gray-700 font-medium">
+                  {user.displayName || user.email}
+                </span>
+                <ChevronDown size={18} className="text-gray-600" />
+              </button>
+
+              {dropdownOpen && (
+                <div className="mt-2 bg-white rounded-lg shadow-md py-2">
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowModal(true);
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-96">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              Are you sure you want to logout?
+            </h2>
+            <p className="text-gray-600 mb-8">
+              You’ll need to log in again to access your account.
+            </p>
+            <div className="flex justify-center space-x-6">
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg shadow-md"
+              >
+                Yes, Logout
+              </button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-6 py-3 rounded-lg shadow-md"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
