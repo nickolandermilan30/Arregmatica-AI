@@ -9,7 +9,9 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [user, setUser] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false); // user dropdown
+  const [dictDropdown, setDictDropdown] = useState(false); // dictionary dropdown
+  const [mobileDictDropdown, setMobileDictDropdown] = useState(false); // mobile dictionary dropdown
   const navigate = useNavigate();
 
   // Listen for logged-in user
@@ -45,14 +47,14 @@ const Navbar = () => {
       {/* Navbar */}
       <nav className="bg-white px-6 py-3 flex items-center justify-between">
         {/* Logo (Left side) */}
-        <Link to="/home" className="flex-shrink-0">
+        <Link to="/landingpage" className="flex-shrink-0">
           <img src={logo} alt="Logo" className="h-14 w-auto object-contain" />
         </Link>
 
         {/* Links - Desktop (Centered) */}
         <div className="hidden md:flex flex-1 justify-center">
-          <div className="flex space-x-10 text-lg font-medium">
-            <Link to="/home" className="text-gray-700 hover:text-blue-500">
+          <div className="flex space-x-10 text-lg font-medium items-center">
+            <Link to="/landingpage" className="text-gray-700 hover:text-blue-500">
               Home
             </Link>
             <Link to="/services" className="text-gray-700 hover:text-blue-500">
@@ -61,9 +63,57 @@ const Navbar = () => {
             <Link to="/history" className="text-gray-700 hover:text-blue-500">
               History
             </Link>
-            <Link to="/dictionary" className="text-gray-700 hover:text-blue-500">
-              Dictionary
-            </Link>
+
+            {/* ✅ Dictionary Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setDictDropdown(!dictDropdown)}
+                className="flex items-center gap-1 text-gray-700 hover:text-blue-500"
+              >
+                Tools
+                <ChevronDown
+                  size={18}
+                  className={`transition-transform ${
+                    dictDropdown ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
+
+              {dictDropdown && (
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
+                  <Link
+                    to="/home"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDictDropdown(false)}
+                  >
+                    Text Enhancer
+                  </Link>
+                  <Link
+                    to="/dictionary"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDictDropdown(false)}
+                  >
+                    Dictionary
+                  </Link>
+                  <Link
+                    to="/humanize"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDictDropdown(false)}
+                  >
+                    Humanize Word
+                  </Link>
+                  <Link
+                    to="/essa-checker"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDictDropdown(false)}
+                  >
+                    Essay Checker
+                  </Link>
+
+                </div>
+              )}
+            </div>
+
             <Link to="/about" className="text-gray-700 hover:text-blue-500">
               About
             </Link>
@@ -161,9 +211,58 @@ const Navbar = () => {
           <Link to="/history" onClick={() => setIsOpen(false)}>
             History
           </Link>
-          <Link to="/dictionary" onClick={() => setIsOpen(false)}>
-            Dictionary
-          </Link>
+
+          {/* ✅ Mobile Dictionary Dropdown */}
+          <div>
+            <button
+              onClick={() => setMobileDictDropdown(!mobileDictDropdown)}
+              className="flex items-center justify-between w-full px-2 py-2 rounded-lg hover:bg-gray-100"
+            >
+              <span>Tools</span>
+              <ChevronDown
+                size={18}
+                className={`transition-transform ${
+                  mobileDictDropdown ? "rotate-180" : "rotate-0"
+                }`}
+              />
+            </button>
+
+            {mobileDictDropdown && (
+              <div className="ml-4 mt-2 flex flex-col space-y-2">
+                <Link
+                  to="/landingpage"
+                  onClick={() => setIsOpen(false)}
+                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                >
+                  Text Enhancer
+                </Link>
+                <Link
+                  to="/dictionary"
+                  onClick={() => setIsOpen(false)}
+                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                >
+                  Dictionary
+                </Link>
+                <Link
+                  to="/humanize"
+                  onClick={() => setIsOpen(false)}
+                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                >
+                  Humanize Word
+                </Link>
+                <Link
+                  to="/essa-checker"
+                  onClick={() => setIsOpen(false)}
+                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                >
+                  Essay Checker
+                </Link>
+
+
+              </div>
+            )}
+          </div>
+
           <Link to="/about" onClick={() => setIsOpen(false)}>
             About
           </Link>

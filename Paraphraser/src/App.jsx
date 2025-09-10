@@ -11,8 +11,12 @@ import Login from "./Home/Login";
 import Register from "./Home/Register";
 import Profile from "./Components/Profile";
 import History from "./Components/History";
-import ProtectedRoute from "./hooks/ProtectedRoute"; // ✅ import
+import ProtectedRoute from "./hooks/ProtectedRoute"; 
 import Dictionary from "./Components/Dictionary";
+import Humanize from "./Components/Humanize"; 
+import EssaChecker from "./Components/EssaChecker";
+import Landingpage from "./Components/LandingPage";
+
 
 const App = () => {
   return (
@@ -36,6 +40,9 @@ const App = () => {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/dictionary" element={<Dictionary />} />
+                <Route path="/essa-checker" element={<EssaChecker />} />
+                <Route path="/humanize" element={<Humanize />} />
+                <Route path="/landingpage" element={<Landingpage />} />
                 <Route path="/multiple-choice" element={<Multiple_choice />} />
                 <Route path="/four-question" element={<Four_question />} />
                 <Route path="/timer-indicated" element={<Timer_indicated />} />

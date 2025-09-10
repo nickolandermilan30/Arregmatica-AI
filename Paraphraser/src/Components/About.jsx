@@ -1,4 +1,12 @@
-import { BookOpen, RefreshCw, Cpu, ClipboardList } from "lucide-react"; // ✅ icons
+import {
+  BookOpen,
+  RefreshCw,
+  Cpu,
+  ClipboardList,
+  Type,
+  PenTool,
+  FileText,
+} from "lucide-react"; // ✅ icons
 import aviona from "../assets/Student/aviona.png";
 import curl from "../assets/Student/Curl Joseph.png";
 import ivan from "../assets/Student/Ivan Barnedo.png";
@@ -60,37 +68,59 @@ const About = () => {
         {/* Right Side Feature Cards */}
         <div className="grid grid-cols-2 gap-6">
           {/* Grammar Checking */}
-          <div className="bg-gray-100 dark:bg-gray-200 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
             <BookOpen size={36} className="text-sky-500 mb-3" />
             <h3 className="font-semibold text-lg">Grammar Checking</h3>
-            <p className="text-sm">
-              Tool to catch grammar, punctuation, and style mistakes.
-            </p>
+            <p className="text-sm">Catch grammar, punctuation, and style mistakes.</p>
           </div>
 
           {/* Paraphrase */}
-          <div className="bg-gray-100 dark:bg-gray-200 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
             <RefreshCw size={36} className="text-green-500 mb-3" />
             <h3 className="font-semibold text-lg">Paraphrase</h3>
-            <p className="text-sm">
-              Rewrite sentences while keeping the original meaning.
-            </p>
+            <p className="text-sm">Rewrite sentences while keeping the meaning.</p>
           </div>
 
           {/* Arregmatica AI */}
-          <div className="bg-gray-100 dark:bg-gray-200 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
             <Cpu size={36} className="text-purple-500 mb-3" />
             <h3 className="font-semibold text-lg">Arregmatica AI</h3>
             <p className="text-sm">The intelligent core of our platform.</p>
           </div>
 
           {/* Quiz */}
-          <div className="bg-gray-100 dark:bg-gray-200 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
             <ClipboardList size={36} className="text-orange-500 mb-3" />
             <h3 className="font-semibold text-lg">Quiz</h3>
-            <p className="text-sm">
-              Practice grammar knowledge with interactive quizzes.
-            </p>
+            <p className="text-sm">Practice grammar knowledge with interactive quizzes.</p>
+          </div>
+
+          {/* Text Enhancer */}
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+            <Type size={36} className="text-indigo-500 mb-3" />
+            <h3 className="font-semibold text-lg">Text Enhancer</h3>
+            <p className="text-sm">Polish and refine sentences for clarity.</p>
+          </div>
+
+          {/* Dictionary */}
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+            <BookOpen size={36} className="text-yellow-500 mb-3" />
+            <h3 className="font-semibold text-lg">Dictionary</h3>
+            <p className="text-sm">Look up meanings, synonyms, and examples.</p>
+          </div>
+
+          {/* Humanize Word */}
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+            <PenTool size={36} className="text-pink-500 mb-3" />
+            <h3 className="font-semibold text-lg">Humanize Word</h3>
+            <p className="text-sm">Make AI-generated text sound more natural.</p>
+          </div>
+
+          {/* Essay Checker */}
+          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
+            <FileText size={36} className="text-red-500 mb-3" />
+            <h3 className="font-semibold text-lg">Essay Checker</h3>
+            <p className="text-sm">Check essays for grammar and readability.</p>
           </div>
         </div>
       </div>
@@ -104,7 +134,7 @@ const About = () => {
             {teamMembers.map((member, index) => (
               <div
                 key={index}
-                className="bg-white dark:bg-gray-200 rounded-xl shadow-md p-6 text-center hover:scale-105 transition-transform"
+                className="bg-white rounded-xl shadow-md p-6 text-center hover:scale-105 transition-transform"
               >
                 <img
                   src={member.image}
