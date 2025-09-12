@@ -1,28 +1,38 @@
 import React, { useState } from "react";
-import { FaSearch } from "react-icons/fa"; 
+import { FaSearch, FaPen, FaCopy } from "react-icons/fa"; 
 import { GoogleGenAI } from "@google/genai";
-import { BookOpen, CheckCircle, Quote, Info } from "lucide-react"; // ✅ icons
+import { BookOpen, CheckCircle, Quote, Info } from "lucide-react";
 import AIImage from "../assets/AI.jpg";
 import UserImage from "../assets/userdp.png";
+import toast, { Toaster } from "react-hot-toast";
 
 const Services = () => {
   const [query, setQuery] = useState("");
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [aiIndex, setAiIndex] = useState(null);
 
   const ai = new GoogleGenAI({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY,
   });
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success("✅ Copied to clipboard!");
+  };
 
+  const handleSearch = async (editIdx = null) => {
+    if (!query.trim()) return;
     setLoading(true);
-    setResponses((prev) => [
-      ...prev,
-      { role: "user", content: query },
-    ]);
-    setQuery("");
+
+    if (editIdx !== null) {
+      setResponses((prev) =>
+        prev.map((msg, i) => (i === editIdx ? { ...msg, content: query } : msg))
+      );
+    } else {
+      setResponses((prev) => [...prev, { role: "user", content: query }]);
+    }
 
     try {
       const response = await ai.models.generateContent({
@@ -34,6 +44,7 @@ const Services = () => {
         ...prev,
         { role: "ai", content: response.text },
       ]);
+      setAiIndex(responses.filter((r) => r.role === "ai").length);
     } catch (error) {
       console.error(error);
       setResponses((prev) => [
@@ -41,139 +52,180 @@ const Services = () => {
         { role: "ai", content: "❌ Sorry, I couldn't process your request." },
       ]);
     } finally {
+      setQuery("");
+      setEditingIndex(null);
       setLoading(false);
     }
   };
 
-  // ✅ Format AI Response with icons + bullets
-  const renderFormattedResponse = (text) => {
-    return text.split("\n").map((line, idx) => {
-      if (line.toLowerCase().includes("meaning") || line.toLowerCase().includes("definition")) {
+  const renderFormattedResponse = (text) =>
+    text.split("\n").map((line, idx) => {
+      if (!line.trim()) return null;
+      if (line.toLowerCase().includes("meaning") || line.toLowerCase().includes("definition"))
         return (
           <div key={idx} className="flex items-start space-x-2 mb-1">
             <BookOpen className="text-blue-600 mt-1" size={18} />
             <span className="font-semibold">{line}</span>
           </div>
         );
-      } else if (line.toLowerCase().includes("example")) {
+      if (line.toLowerCase().includes("example"))
         return (
           <div key={idx} className="flex items-start space-x-2 mb-1">
             <Quote className="text-green-600 mt-1" size={18} />
             <span className="italic">{line}</span>
           </div>
         );
-      } else if (line.startsWith("•") || line.startsWith("-")) {
+      if (line.startsWith("•") || line.startsWith("-"))
         return (
           <div key={idx} className="flex items-start space-x-2 mb-1">
             <CheckCircle className="text-sky-500 mt-1" size={18} />
             <span>{line.replace(/^[-•]\s*/, "")}</span>
           </div>
         );
-      } else if (line.trim() !== "") {
-        return (
-          <div key={idx} className="flex items-start space-x-2 mb-1">
-            <Info className="text-gray-500 mt-1" size={18} />
-            <span>{line}</span>
-          </div>
-        );
-      }
-      return null;
+      return (
+        <div key={idx} className="flex items-start space-x-2 mb-1">
+          <Info className="text-gray-500 mt-1" size={18} />
+          <span>{line}</span>
+        </div>
+      );
     });
+
+  const editMessage = (index) => {
+    setEditingIndex(index);
+    setQuery(responses[index].content);
+  };
+
+  const navigateAI = (direction) => {
+    const aiResponses = responses.filter((r) => r.role === "ai");
+    if (!aiResponses.length) return;
+    let newIndex = aiIndex + direction;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= aiResponses.length) newIndex = aiResponses.length - 1;
+    setAiIndex(newIndex);
+  };
+
+  const currentAIResponse = () => {
+    const aiResponses = responses.filter((r) => r.role === "ai");
+    if (!aiResponses.length || aiIndex === null) return null;
+    return aiResponses[aiIndex].content;
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 px-4 py-8 md:px-10 md:py-12">
-      <h1 className="text-4xl md:text-5xl font-extrabold text-sky-600 mb-8 text-center drop-shadow-lg">
-        Ask Arregmatica AI
+    <div className="min-h-screen w-full bg-gradient-to-br from-sky-50 via-white to-sky-200 flex flex-col items-center px-4 py-8 md:px-10 md:py-12">
+      <Toaster position="top-right" />
+
+      <h1 className="text-4xl md:text-5xl font-extrabold text-sky-700 mb-10 text-center tracking-tight">
+        Ask <span className="text-sky-500">Arregmatica AI</span>
       </h1>
 
-      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Box: Chat / History */}
-        <div className="col-span-2 flex flex-col h-[650px] md:h-[550px]">
-          <div className="flex-1 border-2 border-gray-300 rounded-2xl bg-white p-6 shadow-lg overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">Chat Arregmatica AI</h2>
-            <div className="space-y-4">
-              {responses.map((msg, index) => (
+      <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Chat Box */}
+        <div className="col-span-2 flex flex-col h-[650px] lg:h-[580px] backdrop-blur-md bg-white/80 border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
+          <div className="flex-1 p-6 overflow-y-auto space-y-4">
+            <h2 className="text-xl font-bold text-gray-700 mb-4">💬 Conversation</h2>
+            {responses.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex items-end ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                {msg.role === "ai" && (
+                  <img
+                    src={AIImage}
+                    alt="AI"
+                    className="w-10 h-10 rounded-full mr-2 shadow-md"
+                  />
+                )}
+
                 <div
-                  key={index}
-                  className={`flex items-end ${
-                    msg.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`relative max-w-xs md:max-w-md p-4 rounded-2xl ${
+                    msg.role === "user"
+                      ? "bg-sky-500 text-white rounded-br-none"
+                      : "bg-gray-100 text-gray-800 rounded-bl-none"
+                  } shadow-md`}
+                  style={{ whiteSpace: "pre-line" }}
                 >
-                  {/* AI avatar */}
-                  {msg.role === "ai" && (
-                    <img
-                      src={AIImage}
-                      alt="AI"
-                      className="w-10 h-10 rounded-full mr-2 object-cover"
-                    />
-                  )}
+                  {msg.role === "ai"
+                    ? renderFormattedResponse(msg.content)
+                    : msg.content}
+                </div>
 
-                  {/* Chat bubble */}
-                  <div
-                    className={`max-w-full md:max-w-xs p-4 rounded-xl shadow-md ${
-                      msg.role === "user"
-                        ? "bg-blue-100 text-right"
-                        : "bg-gray-100 text-left"
-                    }`}
-                    style={{ whiteSpace: "pre-line" }}
+                {msg.role === "ai" && (
+                  <button
+                    onClick={() => handleCopy(msg.content)}
+                    className="ml-2 bg-white/90 border border-gray-300 text-sky-600 hover:text-sky-800 rounded-full p-2 shadow-md"
                   >
-                    {msg.role === "ai"
-                      ? renderFormattedResponse(msg.content) // ✅ AI bubble with icons
-                      : msg.content}
-                  </div>
+                    <FaCopy size={16} />
+                  </button>
+                )}
 
-                  {/* User avatar */}
-                  {msg.role === "user" && (
+                {msg.role === "user" && (
+                  <div className="flex items-center ml-2">
+                    <button
+                      onClick={() => editMessage(index)}
+                      className="bg-white/90 border border-gray-300 text-sky-500 hover:text-sky-700 rounded-full p-2 shadow-md"
+                    >
+                      <FaPen size={16} />
+                    </button>
                     <img
                       src={UserImage}
                       alt="User"
-                      className="w-10 h-10 rounded-full ml-2 object-cover"
+                      className="w-10 h-10 rounded-full ml-2 shadow-md"
                     />
-                  )}
-                </div>
-              ))}
-            </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* Input / Search */}
-          <div className="flex gap-4 mt-4">
-            <input
-              type="text"
-              placeholder="Ask about our Arregmatica AI..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 border-2 border-gray-300 rounded-2xl p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={loading}
-              className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-lg transition-transform hover:scale-105 disabled:opacity-50"
-            >
-              <FaSearch /> Search
-            </button>
+          <div className="p-4 border-t bg-white/80">
+            <div className="relative">
+              <textarea
+                rows={2}
+                placeholder="Ask something..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full border border-gray-300 rounded-2xl p-3 pr-14 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+              />
+              <button
+                onClick={() => handleSearch(editingIndex)}
+                disabled={loading}
+                className="absolute right-3 bottom-4 bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-md disabled:opacity-50"
+              >
+                <FaSearch size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Right Box: AI Response / Result */}
-        <div className="hidden md:flex flex-col h-[550px]">
-          <div className="flex-1 border-2 border-gray-300 rounded-2xl bg-white p-6 shadow-lg overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">AI Response</h2>
+        {/* AI Response Panel */}
+        <div className="flex flex-col h-[580px] backdrop-blur-md bg-white/80 border border-gray-200 rounded-2xl shadow-xl p-6">
+          <h2 className="text-xl font-bold text-gray-700 mb-4">📖 AI Insights</h2>
+
+          <div className="flex-1 overflow-y-auto mb-4">
             {loading ? (
-              <p className="text-gray-500 italic">⏳ AI is thinking…</p>
-            ) : responses.filter((r) => r.role === "ai").length > 0 ? (
-              responses
-                .filter((r) => r.role === "ai")
-                .map((msg, index) => (
-                  <div key={index} className="mb-4">
-                    {renderFormattedResponse(msg.content)}
-                  </div>
-                ))
+              <p className="text-gray-500 italic animate-pulse">⏳ AI is thinking…</p>
+            ) : currentAIResponse() ? (
+              <div className="space-y-2">{renderFormattedResponse(currentAIResponse())}</div>
             ) : (
-              <p className="text-gray-400 italic">
-                ✨ AI-generated responses will appear here...
-              </p>
+              <p className="text-gray-400 italic">✨ AI-generated responses will appear here...</p>
             )}
+          </div>
+
+          <div className="flex justify-between">
+            <button
+              onClick={() => navigateAI(-1)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl shadow-sm"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => navigateAI(1)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl shadow-sm"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>

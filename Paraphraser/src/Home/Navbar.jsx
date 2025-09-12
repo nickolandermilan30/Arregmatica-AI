@@ -202,7 +202,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex flex-col p-4 space-y-4 text-lg">
-          <Link to="/home" onClick={() => setIsOpen(false)}>
+          <Link to="/landingpage" onClick={() => setIsOpen(false)}>
             Home
           </Link>
           <Link to="/services" onClick={() => setIsOpen(false)}>
@@ -230,7 +230,7 @@ const Navbar = () => {
             {mobileDictDropdown && (
               <div className="ml-4 mt-2 flex flex-col space-y-2">
                 <Link
-                  to="/landingpage"
+                  to="/home"
                   onClick={() => setIsOpen(false)}
                   className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
                 >

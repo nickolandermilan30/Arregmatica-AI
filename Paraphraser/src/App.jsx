@@ -16,6 +16,7 @@ import Dictionary from "./Components/Dictionary";
 import Humanize from "./Components/Humanize"; 
 import EssaChecker from "./Components/EssaChecker";
 import Landingpage from "./Components/LandingPage";
+import Settings from "./Components/Settings";
 
 
 const App = () => {
@@ -43,6 +44,7 @@ const App = () => {
                 <Route path="/essa-checker" element={<EssaChecker />} />
                 <Route path="/humanize" element={<Humanize />} />
                 <Route path="/landingpage" element={<Landingpage />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/multiple-choice" element={<Multiple_choice />} />
                 <Route path="/four-question" element={<Four_question />} />
                 <Route path="/timer-indicated" element={<Timer_indicated />} />

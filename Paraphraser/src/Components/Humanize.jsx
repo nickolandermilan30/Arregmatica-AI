@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { GoogleGenAI } from "@google/genai";
 import { FaRegCopy } from "react-icons/fa";
+import { Type } from "lucide-react"; // ✅ para may icon sa header
 
 const Humanize = () => {
   const [text, setText] = useState("");
@@ -63,21 +64,26 @@ Return only one short, natural version:\n"${text}"`,
     }
   };
 
+  // ✅ Word Counter
+  const wordCount = text.trim()
+    ? text.trim().split(/\s+/).filter(Boolean).length
+    : 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-sky-100 flex flex-col">
-      {/* Title Bar */}
-      <header className="bg-sky-600 text-white py-4 shadow-md">
-        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-wide">✨ Humanize AI Text</h1>
-          <span className="text-sm opacity-90">Powered by Arregmatica AI</span>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100">
+      {/* HEADER */}
+      <header className="bg-blue-600 text-white py-6 shadow-lg">
+        <div className="max-w-5xl mx-auto px-6 flex items-center space-x-3">
+          <Type size={32} className="text-white" />
+          <h1 className="text-2xl md:text-3xl font-bold">AI Humanizer</h1>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* MAIN CONTENT */}
       <main className="flex-grow flex items-center justify-center px-6 py-10">
         <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left - Input */}
-          <div className="flex flex-col bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="flex flex-col bg-white rounded-2xl shadow-lg p-6 border border-gray-100 relative">
             <h2 className="text-lg font-semibold text-gray-700 mb-3">
               ✍️ Enter your text
             </h2>
@@ -87,10 +93,16 @@ Return only one short, natural version:\n"${text}"`,
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
+
+              {/* 🔹 Word Counter Badge */}
+            <div className="absolute bottom-28 right-10 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full shadow-md text-sm font-medium">
+              {wordCount} {wordCount === 1 ? "word" : "words"}
+            </div>
+
             <button
               onClick={handleHumanize}
               disabled={loading}
-              className="mt-4 bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-3 rounded-xl shadow transition disabled:opacity-50"
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow transition disabled:opacity-50"
             >
               {loading ? "✨ Humanizing..." : "🤖 Humanize Text"}
             </button>
@@ -121,11 +133,11 @@ Return only one short, natural version:\n"${text}"`,
               </p>
             )}
 
-            {/* Progress Bar sa ilalim ng Right Box */}
+            {/* Progress Bar */}
             <div className="mt-4">
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-sky-500 h-3 rounded-full transition-all duration-500"
+                  className="bg-blue-500 h-3 rounded-full transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
@@ -155,7 +167,7 @@ Return only one short, natural version:\n"${text}"`,
 
             <button
               onClick={() => setShowModal(false)}
-              className="bg-sky-600 hover:bg-sky-700 text-white px-8 py-3 rounded-lg shadow font-medium text-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg shadow font-medium text-lg"
             >
               OK
             </button>
