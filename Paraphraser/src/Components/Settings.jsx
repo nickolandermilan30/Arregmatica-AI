@@ -7,7 +7,7 @@ import AIImage from "../assets/AI.jpg";
 import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("account"); // ✅ default = account
   const [currentUser, setCurrentUser] = useState(null);
   const [grammarStats, setGrammarStats] = useState({ count: 0, avgPercent: 0 });
   const [improveCount, setImproveCount] = useState(0);
@@ -71,7 +71,6 @@ const Settings = () => {
       <aside className="w-64 bg-white shadow-lg p-6 hidden md:block">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
         <nav className="space-y-3">
-
           <button
             className={`flex items-center gap-3 w-full px-4 py-2 rounded-lg text-left transition ${
               activeTab === "account"

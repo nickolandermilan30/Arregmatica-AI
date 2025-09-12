@@ -99,7 +99,7 @@ Essay:
             />
 
             {/* 🔹 Word Counter Badge */}
-            <div className="absolute bottom-20 right-10 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full shadow-md text-sm font-medium">
+            <div className="absolute bottom-28 right-10 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full shadow-md text-sm font-medium">
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </div>
 
