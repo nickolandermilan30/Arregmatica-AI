@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai"; // ✅ correct import
 import { BarChart2, FileText, Loader2, AlertTriangle } from "lucide-react";
+import { ref, set, get, child } from "firebase/database";
+import { database } from "../firebase"; // ✅ Firebase import
 
 const EssayChecker = () => {
   const [text, setText] = useState("");
@@ -9,6 +11,33 @@ const EssayChecker = () => {
 
   // ✅ initialize Gemini
   const ai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+
+  // ✅ Kunin next index sa "essays"
+  const getNextIndex = async () => {
+    const dbRef = ref(database);
+    const snapshot = await get(child(dbRef, "essays"));
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      return Object.keys(data).length + 1;
+    }
+    return 1;
+  };
+
+  // ✅ Save sa DB
+  const saveToDatabase = async (inputText, resultData) => {
+    try {
+      const nextIndex = await getNextIndex();
+      const newRef = ref(database, `essays/${nextIndex}`);
+      await set(newRef, {
+        input: inputText,
+        analysis: resultData,
+        timestamp: new Date().toISOString(),
+      });
+      console.log("✅ Essay saved to Firebase");
+    } catch (err) {
+      console.error("❌ Error saving essay:", err);
+    }
+  };
 
   const handleCheck = async () => {
     if (!text.trim()) return;
@@ -46,13 +75,18 @@ Essay:
         total > 0 ? Math.round((parsed.wrong / total) * 100) : 0;
       const overall = correctPercent;
 
-      setAnalysis({
+      const finalAnalysis = {
         ...parsed,
         total,
         correctPercent,
         wrongPercent,
         overall,
-      });
+      };
+
+      setAnalysis(finalAnalysis);
+
+      // ✅ Save sa Firebase
+      await saveToDatabase(text, finalAnalysis);
     } catch (err) {
       console.error("Parsing error:", err);
       setAnalysis({

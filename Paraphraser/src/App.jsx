@@ -17,7 +17,7 @@ import Humanize from "./Components/Humanize";
 import EssaChecker from "./Components/EssaChecker";
 import Landingpage from "./Components/LandingPage";
 import Settings from "./Components/Settings";
-
+import Score from "./Answers/Score";
 
 const App = () => {
   return (
@@ -27,7 +27,7 @@ const App = () => {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected routes */}
+        {/* Protected routes with Navbar */}
         <Route
           path="/*"
           element={
@@ -45,10 +45,35 @@ const App = () => {
                 <Route path="/humanize" element={<Humanize />} />
                 <Route path="/landingpage" element={<Landingpage />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/multiple-choice" element={<Multiple_choice />} />
-                <Route path="/four-question" element={<Four_question />} />
-                <Route path="/timer-indicated" element={<Timer_indicated />} />
+                <Route path="/score" element={<Score />} />
+
               </Routes>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected routes WITHOUT Navbar */}
+        <Route
+          path="/multiple-choice"
+          element={
+            <ProtectedRoute>
+              <Multiple_choice />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/four-question"
+          element={
+            <ProtectedRoute>
+              <Four_question />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/timer-indicated"
+          element={
+            <ProtectedRoute>
+              <Timer_indicated />
             </ProtectedRoute>
           }
         />

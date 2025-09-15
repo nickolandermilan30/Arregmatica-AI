@@ -1,190 +1,157 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import userImage from "../assets/AI.jpg";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const questions = [
   {
-    id: 1,
-    question: "She ____ to the store yesterday.",
-    options: ["go", "went", "gone", "going"],
-    answer: "went",
+    question: "Which sentence is grammatically correct?",
+    options: [
+      "She go to school every day.",
+      "She goes to school every day.",
+      "She going to school every day.",
+      "She gone to school every day."
+    ],
+    answer: 1,
   },
   {
-    id: 2,
-    question: "I have ____ my homework already.",
-    options: ["do", "did", "done", "doing"],
-    answer: "done",
+    question: "What is the synonym of 'happy'?",
+    options: ["Sad", "Joyful", "Angry", "Upset"],
+    answer: 1,
   },
   {
-    id: 3,
-    question: "They ____ playing football every weekend.",
-    options: ["is", "are", "am", "be"],
-    answer: "are",
+    question: "Choose the correct past tense: 'He ____ to the market yesterday.'",
+    options: ["go", "goes", "went", "gone"],
+    answer: 2,
   },
   {
-    id: 4,
-    question: "He ____ a new car last week.",
-    options: ["buy", "buys", "bought", "buying"],
-    answer: "bought",
+    question: "Which word is a noun?",
+    options: ["Run", "Quickly", "Happiness", "Blue"],
+    answer: 2,
   },
   {
-    id: 5,
-    question: "We ____ dinner when the phone rang.",
-    options: ["have", "had", "having", "has"],
-    answer: "had",
+    question: "What is the antonym of 'difficult'?",
+    options: ["Easy", "Hard", "Complicated", "Tough"],
+    answer: 0,
+  },
+  {
+    question: "Identify the adjective: 'The sky is clear today.'",
+    options: ["Sky", "Clear", "Today", "Is"],
+    answer: 1,
+  },
+  {
+    question: "Which sentence is in future tense?",
+    options: [
+      "I am eating dinner.",
+      "I will eat dinner.",
+      "I ate dinner.",
+      "I eat dinner."
+    ],
+    answer: 1,
+  },
+  {
+    question: "What is the plural of 'child'?",
+    options: ["Childs", "Childes", "Children", "Childrens"],
+    answer: 2,
+  },
+  {
+    question: "Choose the correct article: 'She bought ____ apple.'",
+    options: ["a", "an", "the", "no article"],
+    answer: 1,
+  },
+  {
+    question: "Which sentence uses the correct form?",
+    options: [
+      "They is playing football.",
+      "They are playing football.",
+      "They am playing football.",
+      "They playing football."
+    ],
+    answer: 1,
   },
 ];
 
 const Multiple_choice = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { formData } = location.state || {};
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState("");
-  const [answers, setAnswers] = useState({});
-  const [timer, setTimer] = useState(30);
-  const [showModal, setShowModal] = useState(false);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(15);
+  const [finished, setFinished] = useState(false);
   const [score, setScore] = useState(0);
+  const navigate = useNavigate();
 
+  // Timer
   useEffect(() => {
-    if (timer <= 0) {
-      nextQuestion();
+    if (finished) return;
+    if (timeLeft === 0) {
+      handleNext();
       return;
     }
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [timer]);
+    const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [timeLeft, finished]);
 
-  const handleOptionSelect = (option) => {
-    setSelectedOption(option);
-  };
-
-  const nextQuestion = () => {
-    if (selectedOption) {
-      setAnswers((prev) => ({
-        ...prev,
-        [questions[currentIndex].id]: selectedOption,
-      }));
+  const handleNext = () => {
+    if (selected === questions[currentQ].answer) {
+      setScore((s) => s + 1);
     }
-    setSelectedOption("");
-    setTimer(30);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+    if (currentQ < questions.length - 1) {
+      setCurrentQ((q) => q + 1);
+      setSelected(null);
+      setTimeLeft(15);
     } else {
-      // ✅ Compute Score
-      let finalScore = 0;
-      questions.forEach((q) => {
-        if (answers[q.id] === q.answer) {
-          finalScore++;
-        }
-      });
-      setScore(finalScore);
-      setShowModal(true);
+      setFinished(true);
     }
   };
 
-  const currentQuestion = questions[currentIndex];
+  if (finished) {
+    return (
+      <div className="h-screen flex flex-col justify-center items-center bg-white text-center p-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">✅ Quiz Done!</h1>
+        <p className="text-gray-600 mb-6">Now, let’s try the word scramble challenge.</p>
+        <button
+          onClick={() => navigate("/four-question", { state: { score1: score } })}
+          className="px-6 py-3 bg-sky-500 text-white rounded-lg shadow-md hover:bg-sky-600"
+        >
+          Next Challenge
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center relative">
-      {/* User Info */}
-      <div className="bg-white rounded-xl shadow-lg flex items-center p-6 mb-6 w-full max-w-3xl">
-        <img
-          src={userImage}
-          alt="User"
-          className="w-20 h-20 rounded-full object-cover mr-6"
-        />
-        <div className="flex-1">
-          <p className="text-lg font-semibold">{formData?.fullName || "Full Name"}</p>
-          <p className="text-gray-600">{formData?.email || "Email"}</p>
-          <p className="text-gray-600">{formData?.occupation || "Occupation / Student"}</p>
-        </div>
-        <div className="text-right text-gray-700 font-semibold">🕒 {timer}s</div>
+    <div className="h-screen flex flex-col justify-center items-center bg-white p-6">
+      {/* Timer */}
+      <div className="text-right w-full max-w-2xl mb-4 text-lg font-semibold text-gray-700">
+        ⏱ Time left: {timeLeft}s
       </div>
 
-      {/* Question Box */}
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-3xl">
-        <p className="font-semibold mb-4">
-          Question {currentIndex + 1} / {questions.length}
-        </p>
-        <p className="mb-4 text-lg">{currentQuestion.question}</p>
-
-        <div className="flex flex-col gap-3 mb-4">
-          {currentQuestion.options.map((opt, idx) => (
+      {/* Question */}
+      <div className="w-full max-w-2xl bg-gray-50 rounded-xl shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          {currentQ + 1}. {questions[currentQ].question}
+        </h2>
+        <div className="space-y-3">
+          {questions[currentQ].options.map((opt, i) => (
             <button
-              key={idx}
-              onClick={() => handleOptionSelect(opt)}
-              className={`border rounded-xl p-3 text-left transition-colors ${
-                selectedOption === opt
-                  ? "bg-sky-500 text-white"
-                  : "bg-white hover:bg-gray-100"
+              key={i}
+              onClick={() => setSelected(i)}
+              className={`w-full text-left px-4 py-3 rounded-lg border transition ${
+                selected === i
+                  ? "bg-sky-500 text-white border-sky-500"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
               }`}
             >
               {opt}
             </button>
           ))}
         </div>
-
-        <button
-  onClick={nextQuestion}
-  disabled={!selectedOption} // 🚫 Disabled kung walang napiling option
-  className={`w-full font-semibold py-3 rounded-lg shadow-md transition-colors ${
-    selectedOption
-      ? "bg-green-500 hover:bg-green-600 text-white"
-      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-  }`}
->
-  {currentIndex === questions.length - 1 ? "Finish" : "Next"}
-</button>
-
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleNext}
+            className="px-6 py-2 bg-sky-500 text-white rounded-lg shadow-md hover:bg-sky-600"
+          >
+            {currentQ === questions.length - 1 ? "Finish" : "Next"}
+          </button>
+        </div>
       </div>
-
-      {/* ✅ Modal with Score */}
-{showModal && (
-  <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-transparent z-50">
-    <div className="bg-white/95 backdrop-blur-lg rounded-xl shadow-lg p-10 text-center w-full max-w-4xl flex flex-col md:flex-row gap-8">
-      
-      {/* Left Side: User Info */}
-      <div className="flex flex-col items-center md:w-1/2 bg-gray-100 rounded-xl p-6 shadow-inner">
-        <img
-          src={userImage}
-          alt="User"
-          className="w-28 h-28 rounded-full object-cover mb-4 shadow-md"
-        />
-        <p className="mb-2 text-lg font-semibold">👤 {formData?.fullName || "N/A"}</p>
-        <p className="mb-2">📧 {formData?.email || "N/A"}</p>
-        <p className="mb-2">💼 {formData?.occupation || "N/A"}</p>
-      </div>
-
-      {/* Right Side: Score + Message */}
-      <div className="flex flex-col justify-center md:w-1/2">
-        <h2 className="text-3xl font-bold mb-4">Good Job 🎉</h2>
-        <p className="mb-2 text-xl font-semibold">
-          Your Score: <span className="text-sky-600">{score}</span> / {questions.length}
-        </p>
-        <p className="mb-6 text-gray-600">
-          You have completed this quiz! Take a break and start the next one.
-        </p>
-
-        <button
-          onClick={() =>
-            navigate("/four-question", { state: { formData } })
-          }
-          className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors"
-        >
-          Start Next Quiz
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
     </div>
   );
 };

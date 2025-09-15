@@ -1,172 +1,113 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import userImage from "../assets/AI.jpg";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const questions = [
+const words = [
   {
-    id: 1,
-    question: "Choose the correct word: She insisted that he ____ present at the meeting.",
-    answer: "be",
+    clue: "Studies remains of past human life",
+    word: "ARCHAEOLOGIST",
   },
   {
-    id: 2,
-    question: "Fill in the blank: If I ____ about the traffic, I would have left earlier.",
-    answer: "had known",
+    clue: "Studies stars, planets, and galaxies",
+    word: "ASTRONOMER",
   },
   {
-    id: 3,
-    question: "Identify the error: 'Neither of the answers are correct.' (Type the incorrect word)",
-    answer: "are",
+    clue: "Global outbreak of a disease",
+    word: "PANDEMIC",
   },
   {
-    id: 4,
-    question: "What is the antonym of 'scarce'?",
-    answer: "abundant",
+    clue: "Place where historical items are kept",
+    word: "MUSEUM",
   },
   {
-    id: 5,
-    question: "Correct the sentence: 'He suggested me to study harder.' (Type the corrected verb phrase)",
-    answer: "suggested that I",
+    clue: "Science of living organisms",
+    word: "BIOLOGY",
   },
 ];
 
-const HardEnglishQuiz = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { formData } = location.state || {};
+const scramble = (word) => word.split("").sort(() => Math.random() - 0.5);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState("");
-  const [answers, setAnswers] = useState({});
-  const [timer, setTimer] = useState(30);
-  const [showModal, setShowModal] = useState(false);
-  const [score, setScore] = useState(0);
+const HardPuzzle = () => {
+  const location = useLocation();
+  const score1 = location.state?.score1 || 0;
+  const score2 = location.state?.score2 || 0;
+
+  const [current, setCurrent] = useState(0);
+  const [letters, setLetters] = useState(scramble(words[0].word));
+  const [answer, setAnswer] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(40);
+  const [score3, setScore3] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (timer <= 0) {
-      handleNext();
+    if (finished) return;
+    if (timeLeft === 0) {
+      handleCheck();
       return;
     }
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [timer]);
+    const t = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, finished]);
 
-  const handleInputChange = (e) => {
-    setUserAnswer(e.target.value);
+  const handleDrop = (letter) => {
+    setAnswer((a) => [...a, letter]);
+    setLetters((l) => l.filter((x, i) => i !== l.indexOf(letter)));
   };
 
-  const handleNext = () => {
-    const updatedAnswers = {
-      ...answers,
-      [questions[currentIndex].id]: userAnswer.trim().toLowerCase(),
-    };
-
-    setAnswers(updatedAnswers);
-    setUserAnswer("");
-    setTimer(30);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+  const handleCheck = () => {
+    if (answer.join("") === words[current].word) {
+      setScore3((s) => s + 1);
+    }
+    if (current < words.length - 1) {
+      setCurrent((c) => c + 1);
+      setLetters(scramble(words[current + 1].word));
+      setAnswer([]);
+      setTimeLeft(40);
     } else {
-      let finalScore = 0;
-      questions.forEach((q) => {
-        if (updatedAnswers[q.id] === q.answer.toLowerCase()) {
-          finalScore++;
-        }
-      });
-      setScore(finalScore);
-      setShowModal(true);
+      setFinished(true);
+      navigate("/score", { state: { score1, score2, score3 } });
     }
   };
 
-  const currentQuestion = questions[currentIndex];
-
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center relative">
-      {/* User Info */}
-      <div className="bg-white rounded-xl shadow-lg flex items-center p-6 mb-6 w-full max-w-3xl">
-        <img
-          src={userImage}
-          alt="User"
-          className="w-20 h-20 rounded-full object-cover mr-6"
-        />
-        <div className="flex-1">
-          <p className="text-lg font-semibold">{formData?.fullName || "Full Name"}</p>
-          <p className="text-gray-600">{formData?.email || "Email"}</p>
-          <p className="text-gray-600">{formData?.occupation || "Occupation / Student"}</p>
-        </div>
-        <div className="text-right text-gray-700 font-semibold">🕒 {timer}s</div>
+    <div className="h-screen flex flex-col justify-center items-center bg-blue-50 p-6">
+      <div className="text-right w-full max-w-3xl mb-4 text-lg font-semibold text-blue-700">
+        ⏱ {timeLeft}s
       </div>
-
-      {/* Question Box */}
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-3xl">
-        <p className="font-semibold mb-4">
-          Question {currentIndex + 1} / {questions.length}
-        </p>
-        <p className="mb-4 text-lg">{currentQuestion.question}</p>
-
-        <input
-          type="text"
-          value={userAnswer}
-          onChange={handleInputChange}
-          placeholder="Type your exact answer..."
-          className="border rounded-xl p-3 w-full mb-4 focus:ring-2 focus:ring-red-400 outline-none"
-        />
-
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-8 text-center">
+        <div className="bg-blue-100 text-blue-900 p-4 rounded-lg mb-6">
+          <span className="font-bold">Clue:</span> {words[current].clue}
+        </div>
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {words[current].word.split("").map((_, i) => (
+            <div
+              key={i}
+              className="w-12 h-12 flex items-center justify-center border-2 border-blue-300 rounded-lg bg-gray-50 text-lg font-bold uppercase"
+            >
+              {answer[i] || ""}
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap justify-center gap-3 mb-6">
+          {letters.map((letter, i) => (
+            <div
+              key={i}
+              onClick={() => handleDrop(letter)}
+              className="w-12 h-12 flex items-center justify-center bg-blue-600 text-white rounded-lg cursor-pointer text-lg font-bold"
+            >
+              {letter}
+            </div>
+          ))}
+        </div>
         <button
-          onClick={handleNext}
-          disabled={!userAnswer.trim()}
-          className={`w-full font-semibold py-3 rounded-lg shadow-md transition-colors ${
-            userAnswer.trim()
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+          onClick={handleCheck}
+          className="px-6 py-3 bg-blue-700 text-white rounded-lg shadow-md hover:bg-blue-800 transition"
         >
-          {currentIndex === questions.length - 1 ? "Finish" : "Next"}
+          {current === words.length - 1 ? "Finish →" : "Next →"}
         </button>
       </div>
-
-      {/* ✅ Modal with Score */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-transparent z-50">
-          <div className="bg-white/95 backdrop-blur-lg rounded-xl shadow-lg p-10 text-center w-full max-w-4xl flex flex-col md:flex-row gap-8">
-            
-            {/* Left Side: User Info */}
-            <div className="flex flex-col items-center md:w-1/2 bg-gray-100 rounded-xl p-6 shadow-inner">
-              <img
-                src={userImage}
-                alt="User"
-                className="w-28 h-28 rounded-full object-cover mb-4 shadow-md"
-              />
-              <p className="mb-2 text-lg font-semibold">👤 {formData?.fullName || "N/A"}</p>
-              <p className="mb-2">📧 {formData?.email || "N/A"}</p>
-              <p className="mb-2">💼 {formData?.occupation || "N/A"}</p>
-            </div>
-
-            {/* Right Side: Score + Message */}
-            <div className="flex flex-col justify-center md:w-1/2">
-              <h2 className="text-3xl font-bold mb-4 text-green-600">✅ All Done!</h2>
-              <p className="mb-2 text-xl font-semibold">
-                Your Final Score: <span className="text-red-500">{score}</span> / {questions.length}
-              </p>
-              <p className="mb-6 text-gray-600">
-                Congratulations 🎉 You have finished the quiz!
-              </p>
-
-              <button
-                onClick={() => navigate("/")}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors"
-              >
-                Back to Home
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default HardEnglishQuiz;
+export default HardPuzzle;

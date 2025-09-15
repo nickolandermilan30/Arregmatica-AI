@@ -2,17 +2,46 @@ import React, { useEffect, useState } from "react";
 import { auth } from "../firebase";
 import userdp from "../assets/userdp.png";
 import { signOut, updateProfile } from "firebase/auth";
+import { getDatabase, ref, get } from "firebase/database";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
-  const [showModal, setShowModal] = useState(false); // 🔹 control for modal
+  const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [totalScore, setTotalScore] = useState(null);
 
   useEffect(() => {
     setUser(auth.currentUser);
     setNewName(auth.currentUser?.displayName || "");
+
+    const fetchScore = async () => {
+      if (auth.currentUser) {
+        try {
+          const db = getDatabase();
+          const userRef = ref(db, `scores/${auth.currentUser.uid}`);
+          const snapshot = await get(userRef);
+
+          if (snapshot.exists()) {
+            const scoresData = snapshot.val();
+
+            // ✅ Kumuha ng latest o unang entry (depende sa structure)
+            const firstKey = Object.keys(scoresData)[0];
+            const userScore = scoresData[firstKey];
+
+            setTotalScore(userScore.totalScore || 0);
+          } else {
+            setTotalScore(0);
+          }
+        } catch (error) {
+          console.error("Error fetching score:", error);
+          setTotalScore(0);
+        }
+      }
+    };
+
+    fetchScore();
   }, []);
 
   const handleLogout = async () => {
@@ -38,7 +67,9 @@ const Profile = () => {
       }
     } catch (error) {
       console.error("Delete account failed:", error);
-      setModalMessage("Error: You may need to re-login before deleting your account.");
+      setModalMessage(
+        "Error: You may need to re-login before deleting your account."
+      );
       setShowModal(true);
     }
   };
@@ -57,7 +88,6 @@ const Profile = () => {
     }
   };
 
-  // 🔹 Format Date & Time separately
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -92,7 +122,9 @@ const Profile = () => {
               <p className="mt-6 text-2xl font-bold text-gray-800 text-center">
                 {user.displayName || "No Name"}
               </p>
-              <p className="text-gray-500 text-sm mt-1 text-center">Active User</p>
+              <p className="text-gray-500 text-sm mt-1 text-center">
+                Active User
+              </p>
             </div>
 
             {/* User Info */}
@@ -175,6 +207,14 @@ const Profile = () => {
                 </p>
                 <p className="text-sm text-gray-600">{lastSignIn?.time}</p>
               </div>
+
+              {/* ✅ Total Score */}
+              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition">
+                <p className="text-sm text-gray-500">Total Score</p>
+                <p className="text-2xl font-bold text-sky-600">
+                  {totalScore !== null ? totalScore : "Loading..."}
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -198,22 +238,23 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* 🔹 Modal Component */}
-{showModal && (
-  <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/40 z-50">
-    <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm text-center">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Notification</h2>
-      <p className="text-gray-600">{modalMessage}</p>
-      <button
-        onClick={() => setShowModal(false)}
-        className="mt-6 w-full bg-sky-600 text-white py-2 rounded-lg font-medium hover:bg-sky-700"
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
-
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/40 z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm text-center">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Notification
+            </h2>
+            <p className="text-gray-600">{modalMessage}</p>
+            <button
+              onClick={() => setShowModal(false)}
+              className="mt-6 w-full bg-sky-600 text-white py-2 rounded-lg font-medium hover:bg-sky-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

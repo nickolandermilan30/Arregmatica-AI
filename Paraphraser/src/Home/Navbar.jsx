@@ -60,11 +60,8 @@ const Navbar = () => {
             <Link to="/services" className="text-gray-700 hover:text-blue-500">
               Arregmatica AI
             </Link>
-            <Link to="/history" className="text-gray-700 hover:text-blue-500">
-              History
-            </Link>
 
-            {/* ✅ Dictionary Dropdown */}
+            {/* ✅ Tools Dropdown (Dictionary + History nasa dulo) */}
             <div className="relative">
               <button
                 onClick={() => setDictDropdown(!dictDropdown)}
@@ -73,9 +70,7 @@ const Navbar = () => {
                 Tools
                 <ChevronDown
                   size={18}
-                  className={`transition-transform ${
-                    dictDropdown ? "rotate-180" : "rotate-0"
-                  }`}
+                  className={`transition-transform ${dictDropdown ? "rotate-180" : "rotate-0"}`}
                 />
               </button>
 
@@ -109,7 +104,14 @@ const Navbar = () => {
                   >
                     Essay Checker
                   </Link>
-
+                  {/* ✅ History moved here (pinakababa) */}
+                  <Link
+                    to="/history"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 border-t mt-1"
+                    onClick={() => setDictDropdown(false)}
+                  >
+                    History
+                  </Link>
                 </div>
               )}
             </div>
@@ -192,7 +194,7 @@ const Navbar = () => {
       <div
         className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        } overflow-y-auto`} // ✅ scrollable sidebar
       >
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold">Menu</h2>
@@ -208,11 +210,8 @@ const Navbar = () => {
           <Link to="/services" onClick={() => setIsOpen(false)}>
             Arregmatica AI
           </Link>
-          <Link to="/history" onClick={() => setIsOpen(false)}>
-            History
-          </Link>
 
-          {/* ✅ Mobile Dictionary Dropdown */}
+          {/* ✅ Mobile Tools Dropdown with History at the bottom */}
           <div>
             <button
               onClick={() => setMobileDictDropdown(!mobileDictDropdown)}
@@ -257,8 +256,14 @@ const Navbar = () => {
                 >
                   Essay Checker
                 </Link>
-
-
+                {/* ✅ History moved here */}
+                <Link
+                  to="/history"
+                  onClick={() => setIsOpen(false)}
+                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded border-t mt-2"
+                >
+                  History
+                </Link>
               </div>
             )}
           </div>

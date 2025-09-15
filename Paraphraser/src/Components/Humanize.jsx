@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { GoogleGenAI } from "@google/genai";
 import { FaRegCopy } from "react-icons/fa";
-import { Type } from "lucide-react"; // ✅ para may icon sa header
+import { Type } from "lucide-react"; 
+import { ref, set, get, child } from "firebase/database";
+import { database } from "../firebase"; // ✅ import firebase db
 
 const Humanize = () => {
   const [text, setText] = useState("");
@@ -14,6 +16,33 @@ const Humanize = () => {
     apiKey: import.meta.env.VITE_GEMINI_API_KEY,
   });
 
+  // ✅ Kunin next index (1,2,3,...) sa "humanize"
+  const getNextIndex = async () => {
+    const dbRef = ref(database);
+    const snapshot = await get(child(dbRef, "humanize"));
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      return Object.keys(data).length + 1;
+    }
+    return 1;
+  };
+
+  // ✅ Save input & output sa DB
+  const saveToDatabase = async (inputText, resultText) => {
+    try {
+      const nextIndex = await getNextIndex();
+      const newRef = ref(database, `humanize/${nextIndex}`);
+      await set(newRef, {
+        input: inputText,
+        output: resultText,
+        timestamp: new Date().toISOString(),
+      });
+      console.log("✅ Saved to Firebase");
+    } catch (err) {
+      console.error("❌ Error saving:", err);
+    }
+  };
+
   const handleHumanize = async () => {
     if (!text.trim()) return;
     setLoading(true);
@@ -24,9 +53,13 @@ const Humanize = () => {
 Return only one short, natural version:\n"${text}"`,
       });
 
-      setOutput(response.text.trim());
+      const result = response.text.trim();
+      setOutput(result);
 
-      // fake progress para sa right box
+      // ✅ Save sa Firebase
+      await saveToDatabase(text, result);
+
+      // fake progress
       setProgress(0);
       let counter = 0;
       const interval = setInterval(() => {
@@ -94,7 +127,7 @@ Return only one short, natural version:\n"${text}"`,
               onChange={(e) => setText(e.target.value)}
             />
 
-              {/* 🔹 Word Counter Badge */}
+            {/* 🔹 Word Counter Badge */}
             <div className="absolute bottom-28 right-10 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full shadow-md text-sm font-medium">
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </div>
