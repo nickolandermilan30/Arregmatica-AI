@@ -6,12 +6,14 @@ import {
   Type,
   PenTool,
   FileText,
-  HelpCircle, // ✅ quiz icon
+  HelpCircle,
 } from "lucide-react";
-import BooksImage from "../assets/Books.png"; // ✅ background image
+import BooksImage from "../assets/Books.png";
+import { useDarkMode } from "../Theme/DarkModeContext";
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { darkMode } = useDarkMode();
 
   const services = [
     {
@@ -53,22 +55,26 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="w-full">
+    <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"} w-full`}>
       {/* HERO SECTION */}
       <section
         className="relative w-full h-screen bg-cover bg-center flex items-center justify-center text-center"
         style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1529070538774-1843cb3265df')",
+          backgroundImage: `url('https://images.unsplash.com/photo-1529070538774-1843cb3265df')`,
         }}
       >
-        <div className="absolute inset-0 bg-black/50"></div>
+        {/* Overlay */}
+        <div
+          className={`absolute inset-0 ${
+            darkMode ? "bg-black/70" : "bg-black/50"
+          }`}
+        ></div>
 
-        <div className="relative z-10 text-white max-w-2xl px-6">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+        <div className="relative z-10 max-w-2xl px-6 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
             Master English with <span className="text-sky-400">Clarity</span> & Confidence
           </h1>
-          <p className="text-lg mb-6">
+          <p className="text-lg mb-6 text-gray-200">
             Improve your grammar, vocabulary, and writing skills with the help
             of AI-powered tools and personalized study insights.
           </p>
@@ -82,9 +88,9 @@ const LandingPage = () => {
       </section>
 
       {/* SERVICES SECTION */}
-      <section className="py-20 bg-gray-50">
+      <section className={`py-20 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-12">
+          <h2 className={`text-3xl font-bold mb-12 ${darkMode ? "text-white" : "text-gray-800"}`}>
             Website Services
           </h2>
 
@@ -92,17 +98,19 @@ const LandingPage = () => {
             {services.map((service, i) => (
               <div
                 key={i}
-                className="bg-white shadow-md rounded-2xl p-6 flex flex-col items-center text-center hover:shadow-xl transition"
+                className={`shadow-md rounded-2xl p-6 flex flex-col items-center text-center hover:shadow-xl transition ${darkMode ? "bg-gray-700" : "bg-white"}`}
               >
                 <div
                   className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 ${service.bg}`}
                 >
                   {service.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                <h3 className={`text-xl font-semibold mb-2 ${darkMode ? "text-white" : "text-gray-800"}`}>
                   {service.title}
                 </h3>
-                <p className="text-gray-600 text-sm">{service.desc}</p>
+                <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} text-sm`}>
+                  {service.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -116,13 +124,18 @@ const LandingPage = () => {
           backgroundImage: `url(${BooksImage})`,
         }}
       >
-        <div className="absolute inset-0 bg-black/50"></div>
+        {/* Overlay */}
+        <div
+          className={`absolute inset-0 ${
+            darkMode ? "bg-black/70" : "bg-black/50"
+          }`}
+        ></div>
 
-        <div className="relative z-10 text-white max-w-3xl px-6">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
+        <div className="relative z-10 max-w-3xl px-6 text-center">
+          <h2 className={`text-3xl md:text-5xl font-bold mb-6 text-white`}>
             About Our Platform
           </h2>
-          <p className="text-lg mb-6">
+          <p className={`text-lg mb-6 text-gray-200`}>
             We are dedicated to helping students and professionals improve their
             English skills through powerful AI-driven tools and innovative study
             methods.
@@ -137,7 +150,7 @@ const LandingPage = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="py-6 bg-gray-900 text-center text-white">
+      <footer className={`py-6 text-center ${darkMode ? "bg-gray-800 text-gray-200" : "bg-gray-900 text-white"}`}>
         <p className="text-sm">
           © {new Date().getFullYear()} Created by{" "}
           <span className="font-semibold">Arregmatica Team</span>

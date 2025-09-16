@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { ref, set, get, child } from "firebase/database";
 import { database } from "../firebase";
 import toast, { Toaster } from "react-hot-toast";
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ import dark mode context
 
 const Homepage = () => {
   const [text, setText] = useState("");
@@ -13,6 +14,8 @@ const Homepage = () => {
   const [showStyleButton, setShowStyleButton] = useState(false);
   const [errors, setErrors] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+
+  const { darkMode } = useDarkMode(); // ✅ use global dark mode
 
   const ai = new GoogleGenAI({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY,
@@ -35,7 +38,6 @@ const Homepage = () => {
       const nextIndex = await getNextIndex(folder);
       const newRef = ref(database, `${folder}/${nextIndex}`);
       await set(newRef, payload);
-      console.log("✅ Saved:", folder, payload);
     } catch (err) {
       console.error("❌ Error saving:", err);
     }
@@ -133,35 +135,33 @@ const Homepage = () => {
     setShowStyleButton(false);
   };
 
-const handleCopyOutput = () => {
-  if (output) {
-    navigator.clipboard.writeText(output);
-    toast.success("✅ Result copied to clipboard!");
-  }
-};
+  const handleCopyOutput = () => {
+    if (output) {
+      navigator.clipboard.writeText(output);
+      toast.success("✅ Result copied to clipboard!");
+    }
+  };
 
   const styles = ["Standard", "Fluent", "Humanize", "Formal", "Academic", "Simple", "Creative"];
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gradient-to-br from-sky-50 to-indigo-100 px-4 py-8 md:px-8">
+    <div className={`min-h-screen flex items-start justify-center px-4 py-8 md:px-8 ${darkMode ? "bg-gray-900 text-gray-100" : "bg-gradient-to-br from-sky-50 to-indigo-100 text-gray-900"}`}>
       <div className="w-full max-w-7xl mt-12">
         <h1 className="text-4xl md:text-6xl font-extrabold text-center mb-10 text-indigo-700 tracking-wide  drop-shadow-lg flex items-center justify-center gap-3">
           <Sparkles className="w-10 h-10 text-indigo-500" />
           Text Enhancer
         </h1>
-         <Toaster position="top-right" reverseOrder={false} />
+        <Toaster position="top-right" reverseOrder={false} />
 
-        {/* Responsive grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Left Box */}
-          <div className="flex flex-col h-full min-h-[300px] bg-white rounded-2xl shadow-xl p-4 border border-sky-100">
+          <div className={`flex flex-col h-full min-h-[300px] rounded-2xl shadow-xl p-4 border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-sky-100"}`}>
             <textarea
-              className="w-full flex-grow min-h-[250px] md:min-h-[300px] border border-sky-200 rounded-xl p-4 shadow-inner bg-sky-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-800 transition-all resize-none"
+              className={`w-full flex-grow min-h-[250px] md:min-h-[300px] border rounded-xl p-4 shadow-inner focus:outline-none focus:ring-2 transition-all resize-none ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:ring-indigo-400" : "bg-sky-50 border-sky-200 text-black focus:ring-indigo-400"}`}
               placeholder="✍️ Type your text here..."
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
-
             <div className="flex flex-wrap gap-3 mt-4">
               <button
                 onClick={handlePaste}
@@ -179,16 +179,14 @@ const handleCopyOutput = () => {
           </div>
 
           {/* Middle Box */}
-          <div className="flex flex-col h-full min-h-[300px] bg-white rounded-2xl shadow-xl p-4 border border-gray-100">
+          <div className={`flex flex-col h-full min-h-[300px] rounded-2xl shadow-xl p-4 border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
             {showStyleButton && (
               <div className="flex flex-wrap gap-2 mb-3 justify-start">
                 {styles.map((s) => (
                   <button
                     key={s}
                     onClick={() => handleParaphraseStyle(s)}
-                    className={`px-3 py-1 rounded-lg border text-sm transition-all shadow-sm ${
-                      style === s ? "bg-indigo-500 text-white" : "bg-gray-50 text-gray-700 hover:bg-indigo-100"
-                    }`}
+                    className={`px-3 py-1 rounded-lg border text-sm transition-all shadow-sm ${style === s ? "bg-indigo-500 text-white" : darkMode ? "bg-gray-700 text-gray-100 hover:bg-indigo-600" : "bg-gray-50 text-gray-700 hover:bg-indigo-100"}`}
                   >
                     {s}
                   </button>
@@ -196,7 +194,7 @@ const handleCopyOutput = () => {
               </div>
             )}
 
-            <div className="relative flex-grow min-h-[150px] md:min-h-[200px] border border-gray-200 rounded-xl p-4 shadow-inner bg-gray-50 overflow-y-auto text-base leading-relaxed">
+            <div className={`relative flex-grow min-h-[150px] md:min-h-[200px] border rounded-xl p-4 shadow-inner overflow-y-auto text-base leading-relaxed ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-black"}`}>
               {output && (
                 <button
                   onClick={handleCopyOutput}
@@ -207,18 +205,18 @@ const handleCopyOutput = () => {
               )}
 
               {loading ? (
-                <p className="flex items-center gap-2 text-gray-500 italic"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+                <p className={`flex items-center gap-2 italic ${darkMode ? "text-gray-300" : "text-gray-500"}`}><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
               ) : output ? (
                 <>
-                  <h3 className="font-bold mb-2 text-indigo-700">{style} Style:</h3>
+                  <h3 className="font-bold mb-2 text-indigo-400">{style} Style:</h3>
                   <p>{output}</p>
                 </>
               ) : (
-                <p className="text-gray-400 italic">✨ Corrected or paraphrased text will appear here...</p>
+                <p className={`italic ${darkMode ? "text-gray-400" : "text-gray-400"}`}>✨ Corrected or paraphrased text will appear here...</p>
               )}
             </div>
 
-            <div className="flex-grow mt-3 min-h-[120px] md:min-h-[150px] border border-red-200 rounded-xl p-3 shadow-inner bg-red-50 text-red-700 overflow-y-auto text-sm relative">
+            <div className={`flex-grow mt-3 min-h-[120px] md:min-h-[150px] border rounded-xl p-3 shadow-inner overflow-y-auto text-sm relative ${darkMode ? "bg-red-900 border-red-700 text-red-200" : "bg-red-50 border-red-200 text-red-700"}`}>
               {errors.length > 0 ? (
                 <>
                   <div className="relative mb-2">
@@ -253,7 +251,7 @@ const handleCopyOutput = () => {
                   </ul>
                 </>
               ) : (
-                <p className="text-gray-400 italic">⚠️ Wrong words will appear here after Grammar Check...</p>
+                <p className="italic">⚠️ Wrong words will appear here after Grammar Check...</p>
               )}
             </div>
 
@@ -266,8 +264,8 @@ const handleCopyOutput = () => {
           </div>
 
           {/* Right Box */}
-          <div className="flex flex-col h-full min-h-[300px] bg-white rounded-2xl shadow-xl p-4 border border-green-100">
-            <div className="flex-grow min-h-[200px] md:min-h-[250px] border border-green-200 rounded-xl p-3 shadow-inner bg-green-50 text-green-800 overflow-y-auto text-sm">
+          <div className={`flex flex-col h-full min-h-[300px] rounded-2xl shadow-xl p-4 border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-green-100"}`}>
+            <div className={`flex-grow min-h-[200px] md:min-h-[250px] border rounded-xl p-3 shadow-inner overflow-y-auto text-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-green-50 border-green-200 text-green-800"}`}>
               {recommendations.length > 0 ? (
                 <>
                   <h3 className="font-bold mb-2">✅ Recommended Sentences:</h3>
@@ -278,7 +276,7 @@ const handleCopyOutput = () => {
                   </ul>
                 </>
               ) : (
-                <p className="text-gray-400 italic">💡 Recommendations will appear here after Grammar Check...</p>
+                <p className={`italic ${darkMode ? "text-gray-400" : "text-gray-400"}`}>💡 Recommendations will appear here after Grammar Check...</p>
               )}
             </div>
 

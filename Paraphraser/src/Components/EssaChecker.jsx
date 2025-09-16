@@ -1,18 +1,19 @@
 import React, { useState } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // ✅ correct import
+import { GoogleGenerativeAI } from "@google/generative-ai"; 
 import { BarChart2, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { ref, set, get, child } from "firebase/database";
-import { database } from "../firebase"; // ✅ Firebase import
+import { database } from "../firebase"; 
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ Import dark mode
 
 const EssayChecker = () => {
   const [text, setText] = useState("");
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ initialize Gemini
+  const { darkMode } = useDarkMode(); // ✅ Use dark mode
+
   const ai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
-  // ✅ Kunin next index sa "essays"
   const getNextIndex = async () => {
     const dbRef = ref(database);
     const snapshot = await get(child(dbRef, "essays"));
@@ -23,7 +24,6 @@ const EssayChecker = () => {
     return 1;
   };
 
-  // ✅ Save sa DB
   const saveToDatabase = async (inputText, resultData) => {
     try {
       const nextIndex = await getNextIndex();
@@ -64,7 +64,6 @@ Essay:
       const result = await model.generateContent(prompt);
       const raw = result.response.text().trim();
 
-      // ✅ clean JSON
       const cleaned = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(cleaned);
 
@@ -84,8 +83,6 @@ Essay:
       };
 
       setAnalysis(finalAnalysis);
-
-      // ✅ Save sa Firebase
       await saveToDatabase(text, finalAnalysis);
     } catch (err) {
       console.error("Parsing error:", err);
@@ -104,13 +101,12 @@ Essay:
     }
   };
 
-  // ✅ Word Count
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 flex flex-col">
+    <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-gradient-to-br from-indigo-50 via-white to-indigo-100 text-gray-900"} min-h-screen flex flex-col`}>
       {/* HEADER */}
-      <header className="bg-blue-600 text-white py-6 shadow-lg">
+      <header className={`${darkMode ? "bg-gray-800 text-white" : "bg-blue-600 text-white"} py-6 shadow-lg`}>
         <div className="max-w-5xl mx-auto px-6 flex items-center space-x-3">
           <FileText size={32} className="text-white" />
           <h1 className="text-2xl md:text-3xl font-bold">Essay Checker</h1>
@@ -121,18 +117,17 @@ Essay:
       <main className="flex-grow flex items-center justify-center px-6 py-10">
         <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Input */}
-          <div className="flex flex-col bg-white rounded-2xl shadow-lg p-6 border border-gray-100 relative">
-            <h2 className="text-lg font-semibold text-gray-700 mb-3">
+          <div className={`flex flex-col rounded-2xl shadow-lg p-6 border relative ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+            <h2 className={`text-lg font-semibold mb-3 ${darkMode ? "text-gray-100" : "text-gray-700"}`}>
               ✍️ Paste your essay
             </h2>
             <textarea
-              className="flex-grow min-h-[300px] border-2 border-indigo-300 rounded-xl p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-800 resize-none"
+              className={`flex-grow min-h-[300px] border-2 rounded-xl p-4 shadow-sm focus:outline-none focus:ring-2 resize-none transition-all ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:ring-indigo-400" : "border-indigo-300 bg-white text-gray-800 focus:ring-indigo-400"}`}
               placeholder="Paste your essay here..."
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
 
-            {/* 🔹 Word Counter Badge */}
             <div className="absolute bottom-28 right-10 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full shadow-md text-sm font-medium">
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </div>
@@ -140,7 +135,7 @@ Essay:
             <button
               onClick={handleCheck}
               disabled={loading}
-              className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className={`mt-4 font-semibold px-6 py-3 rounded-xl shadow transition disabled:opacity-50 flex items-center justify-center gap-2 ${darkMode ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
             >
               {loading ? (
                 <>
@@ -153,31 +148,29 @@ Essay:
           </div>
 
           {/* Results */}
-          <div className="flex flex-col bg-white rounded-2xl shadow-lg p-6 border border-gray-100 min-h-[350px]">
-            <h2 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <div className={`flex flex-col rounded-2xl shadow-lg p-6 border min-h-[350px] ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+            <h2 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${darkMode ? "text-gray-100" : "text-gray-700"}`}>
               <BarChart2 className="w-5 h-5" /> Results
             </h2>
 
             {!analysis && !loading && (
-              <p className="text-gray-400 italic flex-grow">
+              <p className={`italic flex-grow ${darkMode ? "text-gray-400" : "text-gray-400"}`}>
                 📊 Your essay analysis will appear here...
               </p>
             )}
 
             {analysis && (
               <div className="flex flex-col gap-4 flex-grow">
-                <p className="text-gray-700">
-                  ✅ Correct Sentences:{" "}
-                  <span className="font-bold">{analysis.correct}</span>
+                <p className={`${darkMode ? "text-gray-100" : "text-gray-700"}`}>
+                  ✅ Correct Sentences: <span className="font-bold">{analysis.correct}</span>
                 </p>
-                <p className="text-gray-700">
-                  ❌ Wrong Sentences:{" "}
-                  <span className="font-bold">{analysis.wrong}</span>
+                <p className={`${darkMode ? "text-gray-100" : "text-gray-700"}`}>
+                  ❌ Wrong Sentences: <span className="font-bold">{analysis.wrong}</span>
                 </p>
 
                 {/* Correct Progress */}
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">
+                  <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} text-sm mb-1`}>
                     Correct ({analysis.correctPercent}%)
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-3">
@@ -190,7 +183,7 @@ Essay:
 
                 {/* Wrong Progress */}
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">
+                  <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} text-sm mb-1`}>
                     Wrong ({analysis.wrongPercent}%)
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-3">
@@ -203,32 +196,32 @@ Essay:
 
                 {/* Overall */}
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Overall Score</p>
+                  <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} text-sm mb-1`}>Overall Score</p>
                   <div className="w-full bg-gray-200 rounded-full h-4">
                     <div
                       className="bg-indigo-500 h-4 rounded-full transition-all duration-500"
                       style={{ width: `${analysis.overall}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-700 mt-1 font-medium">
+                  <p className={`${darkMode ? "text-gray-100" : "text-gray-700"} text-sm mt-1 font-medium`}>
                     {analysis.overall}% Score
                   </p>
                 </div>
 
                 {/* Feedback */}
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mt-2">
-                  <p className="text-gray-700 text-sm italic">
+                <div className={`rounded-xl p-3 mt-2 border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-indigo-50 border-indigo-200"}`}>
+                  <p className={`${darkMode ? "text-gray-100 italic" : "text-gray-700 italic text-sm"}`}>
                     {analysis.feedback}
                   </p>
                 </div>
 
-                {/* ❌ Errors Box */}
+                {/* Errors */}
                 {analysis.errors && analysis.errors.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-2">
-                    <h3 className="text-sm font-semibold text-red-700 flex items-center gap-1 mb-2">
+                  <div className={`rounded-xl p-3 mt-2 border ${darkMode ? "bg-red-700 border-red-600" : "bg-red-50 border-red-200"}`}>
+                    <h3 className={`text-sm font-semibold flex items-center gap-1 mb-2 ${darkMode ? "text-red-300" : "text-red-700"}`}>
                       <AlertTriangle className="w-4 h-4" /> Grammar Mistakes
                     </h3>
-                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                    <ul className={`list-disc list-inside text-sm space-y-1 ${darkMode ? "text-gray-200" : "text-gray-700"}`}>
                       {analysis.errors.map((err, i) => (
                         <li key={i}>{err}</li>
                       ))}

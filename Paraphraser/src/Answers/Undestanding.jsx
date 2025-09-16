@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 const words = [
   {
     clue: "Studies remains of past human life",
-    word: "ARCHAEOLOGIST",
+    word: "ARfireaCHAEOLOGIST",
   },
   {
     clue: "Studies stars, planets, and galaxies",

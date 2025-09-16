@@ -2,40 +2,34 @@ import React, { useState, useEffect } from "react";
 import { GoogleGenAI } from "@google/genai";
 import { ref, set, get, child } from "firebase/database";
 import { database } from "../firebase";
-import { BookOpen, Quote, CheckCircle, Languages } from "lucide-react"; // ✅ icons
+import { BookOpen, Quote, CheckCircle, Languages } from "lucide-react"; 
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ Import dark mode context
 
 const Dictionary = () => {
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState("English");
-  const [wordCount, setWordCount] = useState(0); // ✅ word count
+  const [wordCount, setWordCount] = useState(0);
+
+  const { darkMode } = useDarkMode(); // ✅ Use dark mode
 
   const ai = new GoogleGenAI({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY,
   });
 
-  // ✅ auto-update word count
   useEffect(() => {
-    if (!word.trim()) {
-      setWordCount(0);
-    } else {
-      setWordCount(word.trim().split(/\s+/).length);
-    }
+    if (!word.trim()) setWordCount(0);
+    else setWordCount(word.trim().split(/\s+/).length);
   }, [word]);
 
-  // ✅ Kunin next index sa DB
   const getNextIndex = async (folder) => {
     const dbRef = ref(database);
     const snapshot = await get(child(dbRef, folder));
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      return Object.keys(data).length + 1;
-    }
+    if (snapshot.exists()) return Object.keys(snapshot.val()).length + 1;
     return 1;
   };
 
-  // ✅ Save sa DB
   const saveToDatabase = async (folder, payload) => {
     try {
       const nextIndex = await getNextIndex(folder);
@@ -46,7 +40,6 @@ const Dictionary = () => {
     }
   };
 
-  // ✅ Handle Search
   const handleSearch = async () => {
     if (!word.trim()) return;
     setLoading(true);
@@ -65,7 +58,6 @@ Translate both into: ${language}`,
       const result = response.text.trim();
       setDefinition(result);
 
-      // Save sa DB
       await saveToDatabase("dictionary", {
         word: word,
         definition: result,
@@ -80,7 +72,6 @@ Translate both into: ${language}`,
     }
   };
 
-  // ✅ Highlight preview (bold the word)
   const highlightWord = () => {
     if (!word) return "Start typing a word...";
     return (
@@ -92,37 +83,32 @@ Translate both into: ${language}`,
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-100 to-indigo-200">
+    <div className={`min-h-screen flex flex-col ${darkMode ? "bg-gray-900 text-gray-100" : "bg-gradient-to-br from-blue-100 to-indigo-200 text-gray-900"}`}>
       {/* HEADER */}
-      <header className="bg-blue-600 text-white py-6 shadow-lg">
+      <header className={`${darkMode ? "bg-gray-800" : "bg-blue-600"} text-white py-6 shadow-lg`}>
         <div className="max-w-5xl mx-auto px-6 flex items-center space-x-3">
           <Languages size={32} className="text-white" />
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Language Dictionary
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Language Dictionary</h1>
         </div>
       </header>
 
       {/* MAIN CONTENT */}
       <main className="flex-grow flex items-center justify-center px-6 py-10">
-        <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className={`w-full max-w-6xl rounded-2xl shadow-2xl p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-8 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+          
           {/* Left Box */}
           <div className="relative flex flex-col h-full">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Dictionary Search
-            </h2>
+            <h2 className={`text-2xl font-bold mb-4 ${darkMode ? "text-gray-100" : "text-gray-800"}`}>Dictionary Search</h2>
 
-            {/* Preview */}
-            <div className="mb-3 text-gray-700 italic">{highlightWord()}</div>
+            <div className={`mb-3 italic ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{highlightWord()}</div>
 
-            {/* Dropdown Language */}
-            <label className="text-sm font-semibold text-gray-600 mb-2">
+            <label className={`text-sm font-semibold mb-2 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
               🌐 Select Language:
             </label>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="mb-4 p-3 border-2 border-blue-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400"
+              className={`mb-4 p-3 border-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 ${darkMode ? "bg-gray-700 border-gray-600 text-gray-100" : "border-blue-300 bg-white text-gray-900"}`}
             >
               <option>English</option>
               <option>Filipino</option>
@@ -135,13 +121,12 @@ Translate both into: ${language}`,
             </select>
 
             <textarea
-              className="w-full flex-grow min-h-[250px] border-2 border-blue-200 rounded-xl p-4 shadow bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-800 transition-all resize-none"
+              className={`w-full flex-grow min-h-[250px] border-2 rounded-xl p-4 shadow focus:outline-none focus:ring-2 transition-all resize-none ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:ring-indigo-400" : "border-blue-200 bg-white text-black"}`}
               placeholder="✍️ Type a word or sentence here..."
               value={word}
               onChange={(e) => setWord(e.target.value)}
             />
 
-            {/* 🔹 Word Counter Badge */}
             <div className="absolute bottom-21 right-5 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full shadow-md text-sm font-medium">
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </div>
@@ -149,7 +134,7 @@ Translate both into: ${language}`,
             <button
               onClick={handleSearch}
               disabled={loading}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow transition-transform hover:scale-105 disabled:opacity-50"
+              className={`mt-4 font-semibold px-6 py-3 rounded-lg shadow transition-transform hover:scale-105 disabled:opacity-50 ${darkMode ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
             >
               {loading ? "Searching..." : "Search Dictionary"}
             </button>
@@ -157,11 +142,11 @@ Translate both into: ${language}`,
 
           {/* Right Box */}
           <div className="flex flex-col h-full">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Result</h2>
+            <h2 className={`text-2xl font-bold mb-4 ${darkMode ? "text-gray-100" : "text-gray-800"}`}>Result</h2>
 
-            <div className="flex-grow min-h-[250px] border-2 border-green-300 rounded-xl p-6 shadow bg-green-50 text-green-900 overflow-y-auto leading-relaxed text-lg">
+            <div className={`flex-grow min-h-[250px] border-2 rounded-xl p-6 shadow overflow-y-auto leading-relaxed text-lg ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-green-50 border-green-300 text-green-900"}`}>
               {loading ? (
-                <p className="text-gray-500 italic">⏳ Fetching definition…</p>
+                <p className={`italic ${darkMode ? "text-gray-300" : "text-gray-500"}`}>⏳ Fetching definition…</p>
               ) : definition ? (
                 <div className="space-y-6">
                   {definition.split("\n").map((line, idx) => {
@@ -169,10 +154,10 @@ Translate both into: ${language}`,
                       return (
                         <div
                           key={idx}
-                          className="flex items-start space-x-3 bg-white p-3 rounded-lg shadow-sm"
+                          className={`flex items-start space-x-3 p-3 rounded-lg shadow-sm ${darkMode ? "bg-gray-600" : "bg-white"}`}
                         >
-                          <BookOpen className="text-green-600 mt-1" size={22} />
-                          <span className="font-semibold text-gray-800">
+                          <BookOpen className={`mt-1 ${darkMode ? "text-green-400" : "text-green-600"}`} size={22} />
+                          <span className={`font-semibold ${darkMode ? "text-white" : "text-gray-800"}`}>
                             {line.replace("Meaning:", "Meaning:")}
                           </span>
                         </div>
@@ -181,10 +166,10 @@ Translate both into: ${language}`,
                       return (
                         <div
                           key={idx}
-                          className="flex items-start space-x-3 bg-white p-3 rounded-lg shadow-sm"
+                          className={`flex items-start space-x-3 p-3 rounded-lg shadow-sm ${darkMode ? "bg-gray-600" : "bg-white"}`}
                         >
-                          <Quote className="text-blue-600 mt-1" size={22} />
-                          <span className="italic text-gray-700">
+                          <Quote className={`mt-1 ${darkMode ? "text-blue-400" : "text-blue-600"}`} size={22} />
+                          <span className={`italic ${darkMode ? "text-white" : "text-gray-700"}`}>
                             {line.replace("Example:", "Example:")}
                           </span>
                         </div>
@@ -192,14 +177,14 @@ Translate both into: ${language}`,
                     }
                     return (
                       <div key={idx} className="flex items-start space-x-3">
-                        <CheckCircle className="text-gray-500 mt-1" size={18} />
-                        <span>{line}</span>
+                        <CheckCircle className={`mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`} size={18} />
+                        <span className={`${darkMode ? "text-white" : ""}`}>{line}</span>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-gray-400 italic">
+                <p className={`italic ${darkMode ? "text-gray-400" : "text-gray-400"}`}>
                   📖 The meaning and example will appear here after searching...
                 </p>
               )}

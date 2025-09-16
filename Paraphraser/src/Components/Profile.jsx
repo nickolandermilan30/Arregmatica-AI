@@ -3,6 +3,7 @@ import { auth } from "../firebase";
 import userdp from "../assets/userdp.png";
 import { signOut, updateProfile } from "firebase/auth";
 import { getDatabase, ref, get } from "firebase/database";
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ dark mode
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -11,6 +12,7 @@ const Profile = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [totalScore, setTotalScore] = useState(null);
+  const { darkMode } = useDarkMode(); // ✅ hook
 
   useEffect(() => {
     setUser(auth.currentUser);
@@ -25,11 +27,8 @@ const Profile = () => {
 
           if (snapshot.exists()) {
             const scoresData = snapshot.val();
-
-            // ✅ Kumuha ng latest o unang entry (depende sa structure)
             const firstKey = Object.keys(scoresData)[0];
             const userScore = scoresData[firstKey];
-
             setTotalScore(userScore.totalScore || 0);
           } else {
             setTotalScore(0);
@@ -101,16 +100,30 @@ const Profile = () => {
   const lastSignIn = formatDateTime(user?.metadata?.lastSignInTime);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center p-6">
-      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-4xl p-8 md:p-12 relative">
-        <h1 className="text-4xl font-extrabold text-sky-700 mb-10 text-center tracking-wide">
+    <div
+      className={`min-h-screen flex items-center justify-center p-6 transition-colors ${
+        darkMode
+          ? "bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100"
+          : "bg-gradient-to-br from-sky-50 to-sky-100 text-gray-900"
+      }`}
+    >
+      <div
+        className={`shadow-2xl rounded-2xl w-full max-w-4xl p-8 md:p-12 relative transition-colors ${
+          darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+        }`}
+      >
+        <h1 className="text-4xl font-extrabold text-sky-500 mb-10 text-center tracking-wide">
           Account Details
         </h1>
 
         {user ? (
           <div className="flex flex-col md:flex-row gap-8">
             {/* Profile Picture */}
-            <div className="flex flex-col items-center bg-sky-50 rounded-2xl p-6 shadow-inner w-full md:w-1/3">
+            <div
+              className={`flex flex-col items-center rounded-2xl p-6 shadow-inner w-full md:w-1/3 ${
+                darkMode ? "bg-gray-700" : "bg-sky-50"
+              }`}
+            >
               <div className="relative">
                 <img
                   src={user.photoURL || userdp}
@@ -119,19 +132,21 @@ const Profile = () => {
                 />
                 <span className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-2 border-white rounded-full shadow-md"></span>
               </div>
-              <p className="mt-6 text-2xl font-bold text-gray-800 text-center">
+              <p className="mt-6 text-2xl font-bold text-center">
                 {user.displayName || "No Name"}
               </p>
-              <p className="text-gray-500 text-sm mt-1 text-center">
-                Active User
-              </p>
+              <p className="text-sm mt-1 text-center opacity-75">Active User</p>
             </div>
 
             {/* User Info */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Editable Username */}
-              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition flex flex-col gap-4">
-                <p className="text-sm text-gray-500">Username</p>
+              <div
+                className={`rounded-xl p-5 shadow-md hover:shadow-lg transition flex flex-col gap-4 ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}
+              >
+                <p className="text-sm opacity-75">Username</p>
 
                 {editingName ? (
                   <>
@@ -139,7 +154,11 @@ const Profile = () => {
                       type="text"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      className="border rounded-lg px-4 py-2 text-gray-800 w-full"
+                      className={`border rounded-lg px-4 py-2 w-full ${
+                        darkMode
+                          ? "bg-gray-800 text-white border-gray-600"
+                          : "text-gray-800 border-gray-300"
+                      }`}
                     />
                     <div className="flex gap-3">
                       <button
@@ -153,7 +172,11 @@ const Profile = () => {
                           setEditingName(false);
                           setNewName(user.displayName || "");
                         }}
-                        className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300"
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                          darkMode
+                            ? "bg-gray-600 text-white hover:bg-gray-500"
+                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        }`}
                       >
                         Cancel
                       </button>
@@ -161,7 +184,7 @@ const Profile = () => {
                   </>
                 ) : (
                   <>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-lg font-semibold">
                       {user.displayName || "No Username"}
                     </p>
                     <button
@@ -175,42 +198,54 @@ const Profile = () => {
               </div>
 
               {/* Email */}
-              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition">
-                <p className="text-sm text-gray-500">Email Address</p>
-                <p className="text-lg font-semibold text-gray-900 break-words">
-                  {user.email}
-                </p>
+              <div
+                className={`rounded-xl p-5 shadow-md hover:shadow-lg transition ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}
+              >
+                <p className="text-sm opacity-75">Email Address</p>
+                <p className="text-lg font-semibold break-words">{user.email}</p>
               </div>
 
               {/* UID */}
-              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition">
-                <p className="text-sm text-gray-500">Account UID</p>
-                <p className="text-lg font-semibold text-gray-900 break-words">
-                  {user.uid}
-                </p>
+              <div
+                className={`rounded-xl p-5 shadow-md hover:shadow-lg transition ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}
+              >
+                <p className="text-sm opacity-75">Account UID</p>
+                <p className="text-lg font-semibold break-words">{user.uid}</p>
               </div>
 
               {/* Creation Date */}
-              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition">
-                <p className="text-sm text-gray-500">Account Created</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {creation?.date}
-                </p>
-                <p className="text-sm text-gray-600">{creation?.time}</p>
+              <div
+                className={`rounded-xl p-5 shadow-md hover:shadow-lg transition ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}
+              >
+                <p className="text-sm opacity-75">Account Created</p>
+                <p className="text-lg font-semibold">{creation?.date}</p>
+                <p className="text-sm opacity-75">{creation?.time}</p>
               </div>
 
               {/* Last Sign-in */}
-              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition">
-                <p className="text-sm text-gray-500">Last Sign-in</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {lastSignIn?.date}
-                </p>
-                <p className="text-sm text-gray-600">{lastSignIn?.time}</p>
+              <div
+                className={`rounded-xl p-5 shadow-md hover:shadow-lg transition ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}
+              >
+                <p className="text-sm opacity-75">Last Sign-in</p>
+                <p className="text-lg font-semibold">{lastSignIn?.date}</p>
+                <p className="text-sm opacity-75">{lastSignIn?.time}</p>
               </div>
 
-              {/* ✅ Total Score */}
-              <div className="bg-gray-50 rounded-xl p-5 shadow-md hover:shadow-lg transition">
-                <p className="text-sm text-gray-500">Total Score</p>
+              {/* Total Score */}
+              <div
+                className={`rounded-xl p-5 shadow-md hover:shadow-lg transition ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}
+              >
+                <p className="text-sm opacity-75">Total Score</p>
                 <p className="text-2xl font-bold text-sky-600">
                   {totalScore !== null ? totalScore : "Loading..."}
                 </p>
@@ -218,7 +253,7 @@ const Profile = () => {
             </div>
           </div>
         ) : (
-          <p className="text-center text-gray-600">No user is logged in.</p>
+          <p className="text-center opacity-75">No user is logged in.</p>
         )}
 
         {/* Action Buttons */}
@@ -231,7 +266,11 @@ const Profile = () => {
           </button>
           <button
             onClick={handleDeleteAccount}
-            className="w-full md:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl shadow-lg font-semibold transition-transform transform hover:scale-105"
+            className={`w-full md:w-auto px-6 py-3 rounded-xl shadow-lg font-semibold transition-transform transform hover:scale-105 ${
+              darkMode
+                ? "bg-gray-600 hover:bg-gray-500 text-white"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+            }`}
           >
             Delete Account
           </button>
@@ -241,11 +280,13 @@ const Profile = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/40 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm text-center">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Notification
-            </h2>
-            <p className="text-gray-600">{modalMessage}</p>
+          <div
+            className={`rounded-2xl shadow-xl p-8 max-w-sm text-center transition-colors ${
+              darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+            }`}
+          >
+            <h2 className="text-xl font-semibold mb-4">Notification</h2>
+            <p>{modalMessage}</p>
             <button
               onClick={() => setShowModal(false)}
               className="mt-6 w-full bg-sky-600 text-white py-2 rounded-lg font-medium hover:bg-sky-700"

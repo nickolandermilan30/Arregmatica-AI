@@ -18,67 +18,69 @@ import EssaChecker from "./Components/EssaChecker";
 import Landingpage from "./Components/LandingPage";
 import Settings from "./Components/Settings";
 import Score from "./Answers/Score";
+import { DarkModeProvider } from "./Theme/DarkModeContext"; // ✅ import global provider
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <DarkModeProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Protected routes with Navbar */}
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <Routes>
-                <Route path="/home" element={<Homepage />} />
-                <Route path="/services" element={<Services />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/quiz" element={<Quiz />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/dictionary" element={<Dictionary />} />
-                <Route path="/essa-checker" element={<EssaChecker />} />
-                <Route path="/humanize" element={<Humanize />} />
-                <Route path="/landingpage" element={<Landingpage />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/score" element={<Score />} />
+          {/* Protected routes with Navbar */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <Navbar />
+                <Routes>
+                  <Route path="/home" element={<Homepage />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/quiz" element={<Quiz />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/history" element={<History />} />
+                  <Route path="/dictionary" element={<Dictionary />} />
+                  <Route path="/essa-checker" element={<EssaChecker />} />
+                  <Route path="/humanize" element={<Humanize />} />
+                  <Route path="/landingpage" element={<Landingpage />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/score" element={<Score />} />
+                </Routes>
+              </ProtectedRoute>
+            }
+          />
 
-              </Routes>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Protected routes WITHOUT Navbar */}
-        <Route
-          path="/multiple-choice"
-          element={
-            <ProtectedRoute>
-              <Multiple_choice />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/four-question"
-          element={
-            <ProtectedRoute>
-              <Four_question />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/timer-indicated"
-          element={
-            <ProtectedRoute>
-              <Timer_indicated />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+          {/* Protected routes WITHOUT Navbar */}
+          <Route
+            path="/multiple-choice"
+            element={
+              <ProtectedRoute>
+                <Multiple_choice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/four-question"
+            element={
+              <ProtectedRoute>
+                <Four_question />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/timer-indicated"
+            element={
+              <ProtectedRoute>
+                <Timer_indicated />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </DarkModeProvider>
   );
 };
 

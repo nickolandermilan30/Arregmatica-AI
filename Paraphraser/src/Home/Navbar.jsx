@@ -3,15 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
-import logo from "../assets/logo.jpg";
+import logo from "../assets/logopng.png";
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ dark mode
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false); // user dropdown
-  const [dictDropdown, setDictDropdown] = useState(false); // dictionary dropdown
-  const [mobileDictDropdown, setMobileDictDropdown] = useState(false); // mobile dictionary dropdown
+  const [dictDropdown, setDictDropdown] = useState(false); // tools dropdown (desktop)
+  const [mobileDictDropdown, setMobileDictDropdown] = useState(false); // tools dropdown (mobile)
+  const { darkMode } = useDarkMode(); // ✅ dark mode
   const navigate = useNavigate();
 
   // Listen for logged-in user
@@ -22,7 +24,7 @@ const Navbar = () => {
     return () => unsubscribe();
   }, []);
 
-  // ✅ Auto-close sidebar kapag nag-resize to desktop
+  // Auto-close sidebar kapag resize to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -45,70 +47,100 @@ const Navbar = () => {
   return (
     <>
       {/* Navbar */}
-      <nav className="bg-white px-6 py-3 flex items-center justify-between">
-        {/* Logo (Left side) */}
+      <nav
+        className={`px-6 py-3 flex items-center justify-between shadow ${
+          darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
+        }`}
+      >
+        {/* Logo */}
         <Link to="/landingpage" className="flex-shrink-0">
           <img src={logo} alt="Logo" className="h-14 w-auto object-contain" />
         </Link>
 
-        {/* Links - Desktop (Centered) */}
+        {/* Links - Desktop */}
         <div className="hidden md:flex flex-1 justify-center">
           <div className="flex space-x-10 text-lg font-medium items-center">
-            <Link to="/landingpage" className="text-gray-700 hover:text-blue-500">
+            <Link
+              to="/landingpage"
+              className={`hover:text-blue-500`}
+            >
               Home
             </Link>
-            <Link to="/services" className="text-gray-700 hover:text-blue-500">
+            <Link
+              to="/services"
+              className={`hover:text-blue-500`}
+            >
               Arregmatica AI
             </Link>
 
-            {/* ✅ Tools Dropdown (Dictionary + History nasa dulo) */}
+            {/* Tools Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDictDropdown(!dictDropdown)}
-                className="flex items-center gap-1 text-gray-700 hover:text-blue-500"
+                className="flex items-center gap-1 hover:text-blue-500"
               >
                 Tools
                 <ChevronDown
                   size={18}
-                  className={`transition-transform ${dictDropdown ? "rotate-180" : "rotate-0"}`}
+                  className={`transition-transform ${
+                    dictDropdown ? "rotate-180" : "rotate-0"
+                  }`}
                 />
               </button>
 
               {dictDropdown && (
-                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
+                <div
+                  className={`absolute left-0 mt-2 w-56 rounded-lg shadow-lg py-2 z-50 ${
+                    darkMode ? "bg-gray-800 text-gray-100" : "bg-white"
+                  }`}
+                >
                   <Link
                     to="/home"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDictDropdown(false)}
+                    className={`block px-4 py-2 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Text Enhancer
                   </Link>
                   <Link
                     to="/dictionary"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDictDropdown(false)}
+                    className={`block px-4 py-2 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Dictionary
                   </Link>
                   <Link
                     to="/humanize"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDictDropdown(false)}
+                    className={`block px-4 py-2 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Humanize Word
                   </Link>
                   <Link
                     to="/essa-checker"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDictDropdown(false)}
+                    className={`block px-4 py-2 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Essay Checker
                   </Link>
-                  {/* ✅ History moved here (pinakababa) */}
                   <Link
                     to="/history"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 border-t mt-1"
-                    onClick={() => setDictDropdown(false)}
+                    className={`block px-4 py-2 border-t mt-1 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     History
                   </Link>
@@ -116,7 +148,10 @@ const Navbar = () => {
               )}
             </div>
 
-            <Link to="/about" className="text-gray-700 hover:text-blue-500">
+            <Link
+              to="/about"
+              className={`hover:text-blue-500`}
+            >
               About
             </Link>
           </div>
@@ -128,27 +163,41 @@ const Navbar = () => {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition"
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
               >
-                <span className="text-gray-700 font-medium">
+                <span className="font-medium">
                   {user.displayName || user.email}
                 </span>
-                <ChevronDown size={18} className="text-gray-600" />
+                <ChevronDown size={18} />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                <div
+                  className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-2 z-50 ${
+                    darkMode ? "bg-gray-800 text-gray-100" : "bg-white"
+                  }`}
+                >
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDropdownOpen(false)}
+                    className={`block px-4 py-2 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Profile
                   </Link>
                   <Link
                     to="/settings"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDropdownOpen(false)}
+                    className={`block px-4 py-2 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Settings
                   </Link>
@@ -157,7 +206,11 @@ const Navbar = () => {
                       setShowModal(true);
                       setDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                    className={`w-full text-left px-4 py-2 text-red-600 ${
+                      darkMode
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     Logout
                   </button>
@@ -183,7 +236,7 @@ const Navbar = () => {
         </button>
       </nav>
 
-      {/* ✅ Overlay + Sidebar for Mobile */}
+      {/* Overlay for Mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
@@ -191,10 +244,11 @@ const Navbar = () => {
         />
       )}
 
+      {/* Sidebar - Mobile */}
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        } overflow-y-auto`} // ✅ scrollable sidebar
+        className={`fixed top-0 right-0 h-full w-64 shadow-lg z-50 transform transition-transform duration-300 ${
+          darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
+        } ${isOpen ? "translate-x-0" : "translate-x-full"} overflow-y-auto`}
       >
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold">Menu</h2>
@@ -211,11 +265,13 @@ const Navbar = () => {
             Arregmatica AI
           </Link>
 
-          {/* ✅ Mobile Tools Dropdown with History at the bottom */}
+          {/* Tools Dropdown - Mobile */}
           <div>
             <button
               onClick={() => setMobileDictDropdown(!mobileDictDropdown)}
-              className="flex items-center justify-between w-full px-2 py-2 rounded-lg hover:bg-gray-100"
+              className={`flex items-center justify-between w-full px-2 py-2 rounded-lg ${
+                darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+              }`}
             >
               <span>Tools</span>
               <ChevronDown
@@ -231,36 +287,45 @@ const Navbar = () => {
                 <Link
                   to="/home"
                   onClick={() => setIsOpen(false)}
-                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                  className={`px-2 py-1 rounded ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
                 >
                   Text Enhancer
                 </Link>
                 <Link
                   to="/dictionary"
                   onClick={() => setIsOpen(false)}
-                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                  className={`px-2 py-1 rounded ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
                 >
                   Dictionary
                 </Link>
                 <Link
                   to="/humanize"
                   onClick={() => setIsOpen(false)}
-                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                  className={`px-2 py-1 rounded ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
                 >
                   Humanize Word
                 </Link>
                 <Link
                   to="/essa-checker"
                   onClick={() => setIsOpen(false)}
-                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded"
+                  className={`px-2 py-1 rounded ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
                 >
                   Essay Checker
                 </Link>
-                {/* ✅ History moved here */}
                 <Link
                   to="/history"
                   onClick={() => setIsOpen(false)}
-                  className="px-2 py-1 text-gray-700 hover:bg-gray-100 rounded border-t mt-2"
+                  className={`px-2 py-1 rounded border-t mt-2 ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
                 >
                   History
                 </Link>
@@ -279,31 +344,41 @@ const Navbar = () => {
             Take Quiz
           </Link>
 
-          {/* ✅ User dropdown sa Mobile */}
+          {/* User Dropdown - Mobile */}
           {user && (
             <div className="mt-6 border-t pt-4">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg transition ${
+                  darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                }`}
               >
-                <span className="text-gray-700 font-medium">
+                <span className="font-medium">
                   {user.displayName || user.email}
                 </span>
-                <ChevronDown size={18} className="text-gray-600" />
+                <ChevronDown size={18} />
               </button>
 
               {dropdownOpen && (
-                <div className="mt-2 bg-white rounded-lg shadow-md py-2">
+                <div
+                  className={`mt-2 rounded-lg shadow-md py-2 ${
+                    darkMode ? "bg-gray-800" : "bg-white"
+                  }`}
+                >
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    className={`block px-4 py-2 ${
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    }`}
                     onClick={() => setIsOpen(false)}
                   >
                     Profile
                   </Link>
                   <Link
                     to="/settings"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    className={`block px-4 py-2 ${
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    }`}
                     onClick={() => setIsOpen(false)}
                   >
                     Settings
@@ -313,7 +388,9 @@ const Navbar = () => {
                       setShowModal(true);
                       setIsOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                    className={`w-full text-left px-4 py-2 text-red-600 ${
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    }`}
                   >
                     Logout
                   </button>
@@ -327,11 +404,15 @@ const Navbar = () => {
       {/* Logout Confirmation Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-96">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+          <div
+            className={`p-8 rounded-2xl shadow-2xl text-center w-96 ${
+              darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+            }`}
+          >
+            <h2 className="text-2xl font-bold mb-6">
               Are you sure you want to logout?
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="mb-8">
               You’ll need to log in again to access your account.
             </p>
             <div className="flex justify-center space-x-6">
@@ -343,7 +424,11 @@ const Navbar = () => {
               </button>
               <button
                 onClick={() => setShowModal(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-6 py-3 rounded-lg shadow-md"
+                className={`font-semibold px-6 py-3 rounded-lg shadow-md ${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600 text-gray-100"
+                    : "bg-gray-300 hover:bg-gray-400 text-gray-800"
+                }`}
               >
                 Cancel
               </button>

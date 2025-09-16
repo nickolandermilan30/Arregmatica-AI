@@ -4,6 +4,7 @@ import { FaRegCopy } from "react-icons/fa";
 import { Type } from "lucide-react"; 
 import { ref, set, get, child } from "firebase/database";
 import { database } from "../firebase"; // ✅ import firebase db
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ Import dark mode
 
 const Humanize = () => {
   const [text, setText] = useState("");
@@ -11,6 +12,8 @@ const Humanize = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const { darkMode } = useDarkMode(); // ✅ Use dark mode
 
   const ai = new GoogleGenAI({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY,
@@ -103,9 +106,9 @@ Return only one short, natural version:\n"${text}"`,
     : 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100">
+    <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-gradient-to-br from-sky-50 via-white to-sky-100 text-gray-900"} min-h-screen flex flex-col`}>
       {/* HEADER */}
-      <header className="bg-blue-600 text-white py-6 shadow-lg">
+      <header className={`${darkMode ? "bg-gray-800 text-white" : "bg-blue-600 text-white"} py-6 shadow-lg`}>
         <div className="max-w-5xl mx-auto px-6 flex items-center space-x-3">
           <Type size={32} className="text-white" />
           <h1 className="text-2xl md:text-3xl font-bold">AI Humanizer</h1>
@@ -116,12 +119,12 @@ Return only one short, natural version:\n"${text}"`,
       <main className="flex-grow flex items-center justify-center px-6 py-10">
         <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left - Input */}
-          <div className="flex flex-col bg-white rounded-2xl shadow-lg p-6 border border-gray-100 relative">
-            <h2 className="text-lg font-semibold text-gray-700 mb-3">
+          <div className={`flex flex-col rounded-2xl shadow-lg p-6 border relative ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+            <h2 className={`text-lg font-semibold mb-3 ${darkMode ? "text-gray-100" : "text-gray-700"}`}>
               ✍️ Enter your text
             </h2>
             <textarea
-              className="flex-grow min-h-[300px] border-2 border-sky-300 rounded-xl p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 text-gray-800 resize-none"
+              className={`flex-grow min-h-[300px] border-2 rounded-xl p-4 shadow-sm focus:outline-none focus:ring-2 resize-none transition-all ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:ring-indigo-400" : "border-sky-300 bg-white text-gray-800 focus:ring-sky-400"}`}
               placeholder="Paste or type text you want to humanize..."
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -135,15 +138,15 @@ Return only one short, natural version:\n"${text}"`,
             <button
               onClick={handleHumanize}
               disabled={loading}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow transition disabled:opacity-50"
+              className={`mt-4 font-semibold px-6 py-3 rounded-xl shadow transition disabled:opacity-50 ${darkMode ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
             >
               {loading ? "✨ Humanizing..." : "🤖 Humanize Text"}
             </button>
           </div>
 
           {/* Right - Output */}
-          <div className="relative flex flex-col bg-white rounded-2xl shadow-lg p-6 border border-gray-100 min-h-[350px]">
-            <h2 className="text-lg font-semibold text-gray-700 mb-3">
+          <div className={`relative flex flex-col rounded-2xl shadow-lg p-6 border min-h-[350px] ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+            <h2 className={`text-lg font-semibold mb-3 ${darkMode ? "text-gray-100" : "text-gray-700"}`}>
               ✅ Humanized Result
             </h2>
             {output && (
@@ -155,13 +158,13 @@ Return only one short, natural version:\n"${text}"`,
               </button>
             )}
             {loading ? (
-              <p className="text-gray-500 italic">Processing…</p>
+              <p className={`italic ${darkMode ? "text-gray-300" : "text-gray-500"}`}>Processing…</p>
             ) : output ? (
-              <p className="text-gray-800 leading-relaxed whitespace-pre-line flex-grow">
+              <p className={`leading-relaxed whitespace-pre-line flex-grow ${darkMode ? "text-white" : "text-gray-800"}`}>
                 {output}
               </p>
             ) : (
-              <p className="text-gray-400 italic flex-grow">
+              <p className={`italic flex-grow ${darkMode ? "text-gray-400" : "text-gray-400"}`}>
                 📝 Your humanized text will appear here...
               </p>
             )}
@@ -183,7 +186,7 @@ Return only one short, natural version:\n"${text}"`,
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full text-center animate-fadeIn">
+          <div className="rounded-2xl shadow-2xl p-10 max-w-lg w-full text-center animate-fadeIn bg-white">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">✅ Copied!</h2>
             <p className="text-gray-600 mb-8 text-lg">
               Your text has been successfully copied to the clipboard.

@@ -14,8 +14,11 @@ import jm from "../assets/Student/Jm.png";
 import rey from "../assets/Student/Rey Adrian.png";
 import rinoa from "../assets/Student/Rinoa.png";
 import ruzzel from "../assets/Student/Ruzzel.png";
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ dark mode
 
 const About = () => {
+  const { darkMode } = useDarkMode(); // ✅ get dark mode state
+
   const teamMembers = [
     { name: "Princess Aviona Amad", image: aviona },
     { name: "Ivan Barnedo", image: ivan },
@@ -26,8 +29,19 @@ const About = () => {
     { name: "Curl Joseph Villanueva", image: curl },
   ];
 
+  const featureCards = [
+    { icon: <BookOpen size={36} className="text-sky-500 mb-3" />, title: "Grammar Checking", desc: "Catch grammar, punctuation, and style mistakes." },
+    { icon: <RefreshCw size={36} className="text-green-500 mb-3" />, title: "Paraphrase", desc: "Rewrite sentences while keeping the meaning." },
+    { icon: <Cpu size={36} className="text-purple-500 mb-3" />, title: "Arregmatica AI", desc: "The intelligent core of our platform." },
+    { icon: <ClipboardList size={36} className="text-orange-500 mb-3" />, title: "Quiz", desc: "Practice grammar knowledge with interactive quizzes." },
+    { icon: <Type size={36} className="text-indigo-500 mb-3" />, title: "Text Enhancer", desc: "Polish and refine sentences for clarity." },
+    { icon: <BookOpen size={36} className="text-yellow-500 mb-3" />, title: "Dictionary", desc: "Look up meanings, synonyms, and examples." },
+    { icon: <PenTool size={36} className="text-pink-500 mb-3" />, title: "Humanize Word", desc: "Make AI-generated text sound more natural." },
+    { icon: <FileText size={36} className="text-red-500 mb-3" />, title: "Essay Checker", desc: "Check essays for grammar and readability." },
+  ];
+
   return (
-    <div className="px-6 md:px-16 py-10 dark:text-gray-900 bg-white min-h-screen">
+    <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"} px-6 md:px-16 py-10 min-h-screen`}>
       {/* Title */}
       <h1 className="text-center text-4xl font-bold mb-12">About Us</h1>
 
@@ -67,61 +81,16 @@ const About = () => {
 
         {/* Right Side Feature Cards */}
         <div className="grid grid-cols-2 gap-6">
-          {/* Grammar Checking */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <BookOpen size={36} className="text-sky-500 mb-3" />
-            <h3 className="font-semibold text-lg">Grammar Checking</h3>
-            <p className="text-sm">Catch grammar, punctuation, and style mistakes.</p>
-          </div>
-
-          {/* Paraphrase */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <RefreshCw size={36} className="text-green-500 mb-3" />
-            <h3 className="font-semibold text-lg">Paraphrase</h3>
-            <p className="text-sm">Rewrite sentences while keeping the meaning.</p>
-          </div>
-
-          {/* Arregmatica AI */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <Cpu size={36} className="text-purple-500 mb-3" />
-            <h3 className="font-semibold text-lg">Arregmatica AI</h3>
-            <p className="text-sm">The intelligent core of our platform.</p>
-          </div>
-
-          {/* Quiz */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <ClipboardList size={36} className="text-orange-500 mb-3" />
-            <h3 className="font-semibold text-lg">Quiz</h3>
-            <p className="text-sm">Practice grammar knowledge with interactive quizzes.</p>
-          </div>
-
-          {/* Text Enhancer */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <Type size={36} className="text-indigo-500 mb-3" />
-            <h3 className="font-semibold text-lg">Text Enhancer</h3>
-            <p className="text-sm">Polish and refine sentences for clarity.</p>
-          </div>
-
-          {/* Dictionary */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <BookOpen size={36} className="text-yellow-500 mb-3" />
-            <h3 className="font-semibold text-lg">Dictionary</h3>
-            <p className="text-sm">Look up meanings, synonyms, and examples.</p>
-          </div>
-
-          {/* Humanize Word */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <PenTool size={36} className="text-pink-500 mb-3" />
-            <h3 className="font-semibold text-lg">Humanize Word</h3>
-            <p className="text-sm">Make AI-generated text sound more natural.</p>
-          </div>
-
-          {/* Essay Checker */}
-          <div className="bg-gray-100 rounded-xl p-6 shadow-md flex flex-col items-center text-center">
-            <FileText size={36} className="text-red-500 mb-3" />
-            <h3 className="font-semibold text-lg">Essay Checker</h3>
-            <p className="text-sm">Check essays for grammar and readability.</p>
-          </div>
+          {featureCards.map((card, idx) => (
+            <div
+              key={idx}
+              className={`${darkMode ? "bg-gray-800 shadow-gray-700" : "bg-gray-100 shadow-md"} rounded-xl p-6 flex flex-col items-center text-center`}
+            >
+              {card.icon}
+              <h3 className="font-semibold text-lg">{card.title}</h3>
+              <p className="text-sm">{card.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -134,7 +103,7 @@ const About = () => {
             {teamMembers.map((member, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl shadow-md p-6 text-center hover:scale-105 transition-transform"
+                className={`${darkMode ? "bg-gray-800 shadow-gray-700" : "bg-white shadow-md"} rounded-xl p-6 text-center hover:scale-105 transition-transform`}
               >
                 <img
                   src={member.image}
