@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 const words = [
   {
     clue: "Studies remains of past human life",
-    word: "ARfireaCHAEOLOGIST",
+    word: "ARCHAEOLOGIST",
   },
   {
     clue: "Studies stars, planets, and galaxies",
@@ -24,7 +24,14 @@ const words = [
   },
 ];
 
-const scramble = (word) => word.split("").sort(() => Math.random() - 0.5);
+// ✅ Function para magdagdag ng pang-gulo letters
+const addDistractors = (word) => {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const distractors = Array.from({ length: 5 }, () =>
+    alphabet[Math.floor(Math.random() * alphabet.length)]
+  );
+  return [...word.split(""), ...distractors].sort(() => Math.random() - 0.5);
+};
 
 const HardPuzzle = () => {
   const location = useLocation();
@@ -32,7 +39,7 @@ const HardPuzzle = () => {
   const score2 = location.state?.score2 || 0;
 
   const [current, setCurrent] = useState(0);
-  const [letters, setLetters] = useState(scramble(words[0].word));
+  const [letters, setLetters] = useState(addDistractors(words[0].word));
   const [answer, setAnswer] = useState([]);
   const [timeLeft, setTimeLeft] = useState(40);
   const [score3, setScore3] = useState(0);
@@ -49,9 +56,15 @@ const HardPuzzle = () => {
     return () => clearTimeout(t);
   }, [timeLeft, finished]);
 
-  const handleDrop = (letter) => {
+  const handleDrop = (letter, index) => {
     setAnswer((a) => [...a, letter]);
-    setLetters((l) => l.filter((x, i) => i !== l.indexOf(letter)));
+    setLetters((l) => l.filter((_, i) => i !== index));
+  };
+
+  const handleClear = () => {
+    // Reset current attempt
+    setLetters(addDistractors(words[current].word));
+    setAnswer([]);
   };
 
   const handleCheck = () => {
@@ -60,7 +73,7 @@ const HardPuzzle = () => {
     }
     if (current < words.length - 1) {
       setCurrent((c) => c + 1);
-      setLetters(scramble(words[current + 1].word));
+      setLetters(addDistractors(words[current + 1].word));
       setAnswer([]);
       setTimeLeft(40);
     } else {
@@ -92,19 +105,28 @@ const HardPuzzle = () => {
           {letters.map((letter, i) => (
             <div
               key={i}
-              onClick={() => handleDrop(letter)}
+              onClick={() => handleDrop(letter, i)}
               className="w-12 h-12 flex items-center justify-center bg-blue-600 text-white rounded-lg cursor-pointer text-lg font-bold"
             >
               {letter}
             </div>
           ))}
         </div>
-        <button
-          onClick={handleCheck}
-          className="px-6 py-3 bg-blue-700 text-white rounded-lg shadow-md hover:bg-blue-800 transition"
-        >
-          {current === words.length - 1 ? "Finish →" : "Next →"}
-        </button>
+
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={handleClear}
+            className="px-6 py-3 bg-gray-400 text-white rounded-lg shadow-md hover:bg-gray-500 transition"
+          >
+            Clear ✖
+          </button>
+          <button
+            onClick={handleCheck}
+            className="px-6 py-3 bg-blue-700 text-white rounded-lg shadow-md hover:bg-blue-800 transition"
+          >
+            {current === words.length - 1 ? "Finish →" : "Next →"}
+          </button>
+        </div>
       </div>
     </div>
   );

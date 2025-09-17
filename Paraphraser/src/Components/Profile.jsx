@@ -1,9 +1,19 @@
+// src/pages/Profile.js
 import React, { useEffect, useState } from "react";
 import { auth } from "../firebase";
 import userdp from "../assets/userdp.png";
 import { signOut, updateProfile } from "firebase/auth";
-import { getDatabase, ref, get } from "firebase/database";
-import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ dark mode
+import {
+  getDatabase,
+  ref,
+  get,
+  onValue,
+  onDisconnect,
+  set,
+  update,
+} from "firebase/database";
+import { useDarkMode } from "../Theme/DarkModeContext";
+import { FaMedal } from "react-icons/fa";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -12,39 +22,88 @@ const Profile = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [totalScore, setTotalScore] = useState(null);
-  const { darkMode } = useDarkMode(); // ✅ hook
+  const [leaderboard, setLeaderboard] = useState([]);
+  const { darkMode } = useDarkMode();
+
+  const db = getDatabase();
 
   useEffect(() => {
-    setUser(auth.currentUser);
-    setNewName(auth.currentUser?.displayName || "");
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
 
-    const fetchScore = async () => {
-      if (auth.currentUser) {
-        try {
-          const db = getDatabase();
-          const userRef = ref(db, `scores/${auth.currentUser.uid}`);
-          const snapshot = await get(userRef);
+    setUser(currentUser);
+    setNewName(currentUser.displayName || "");
 
-          if (snapshot.exists()) {
-            const scoresData = snapshot.val();
-            const firstKey = Object.keys(scoresData)[0];
-            const userScore = scoresData[firstKey];
-            setTotalScore(userScore.totalScore || 0);
-          } else {
-            setTotalScore(0);
-          }
-        } catch (error) {
-          console.error("Error fetching score:", error);
-          setTotalScore(0);
-        }
+    // ✅ Setup presence
+    const userStatusRef = ref(db, `scores/${currentUser.uid}`);
+    const isOnlineRef = ref(db, `.info/connected`);
+
+    const handlePresence = onValue(isOnlineRef, (snapshot) => {
+      if (snapshot.val() === false) {
+        return;
       }
-    };
 
-    fetchScore();
-  }, []);
+      // kapag disconnected -> set status to offline
+      onDisconnect(userStatusRef).update({
+        isOnline: false,
+        lastSeen: new Date().toISOString(),
+      });
+
+      // kapag connected -> update as online
+      update(userStatusRef, {
+        isOnline: true,
+        lastSeen: new Date().toISOString(),
+      });
+    });
+
+    // ✅ Realtime fetch totalScore + leaderboard
+    const scoresRef = ref(db, "scores");
+    const unsubscribeScores = onValue(scoresRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const scoresData = snapshot.val();
+        let foundScore = 0;
+
+        const usersArray = Object.keys(scoresData).map((uid) => {
+          const entry = scoresData[uid];
+          if (uid === currentUser.uid) {
+            foundScore = entry.totalScore || 0;
+          }
+
+          return {
+            fullName: entry.fullName,
+            totalScore: entry.totalScore || 0,
+            avatar: entry.avatar || null,
+            uid,
+            isOnline: entry.isOnline || false,
+            lastSeen: entry.lastSeen || null,
+          };
+        });
+
+        // sort by score
+        usersArray.sort((a, b) => b.totalScore - a.totalScore);
+
+        setLeaderboard(usersArray);
+        setTotalScore(foundScore);
+      } else {
+        setLeaderboard([]);
+        setTotalScore(0);
+      }
+    });
+
+    return () => {
+      handlePresence();
+      unsubscribeScores();
+    };
+  }, [db]);
 
   const handleLogout = async () => {
     try {
+      const userStatusRef = ref(db, `scores/${auth.currentUser.uid}`);
+      await update(userStatusRef, {
+        isOnline: false,
+        lastSeen: new Date().toISOString(),
+      });
+
       await signOut(auth);
       window.location.href = "/";
     } catch (error) {
@@ -59,6 +118,9 @@ const Profile = () => {
           "Are you sure you want to delete your account? This action cannot be undone."
         )
       ) {
+        const userStatusRef = ref(db, `scores/${auth.currentUser.uid}`);
+        await set(userStatusRef, null); // delete user from scores
+
         await auth.currentUser.delete();
         setModalMessage("Account deleted successfully.");
         setShowModal(true);
@@ -77,6 +139,11 @@ const Profile = () => {
     try {
       await updateProfile(auth.currentUser, { displayName: newName });
       setUser({ ...auth.currentUser, displayName: newName });
+
+      // update din sa database
+      const userRef = ref(db, `scores/${auth.currentUser.uid}`);
+      await update(userRef, { fullName: newName });
+
       setEditingName(false);
       setModalMessage("Name updated successfully! 🎉");
       setShowModal(true);
@@ -99,14 +166,84 @@ const Profile = () => {
   const creation = formatDateTime(user?.metadata?.creationTime);
   const lastSignIn = formatDateTime(user?.metadata?.lastSignInTime);
 
+  const getMedal = (index) => {
+    if (index === 0) return <FaMedal className="text-yellow-400 text-2xl" />;
+    if (index === 1) return <FaMedal className="text-gray-400 text-2xl" />;
+    if (index === 2) return <FaMedal className="text-amber-700 text-2xl" />;
+    return null;
+  };
+
   return (
     <div
-      className={`min-h-screen flex items-center justify-center p-6 transition-colors ${
+      className={`min-h-screen flex items-start justify-center p-6 gap-6 transition-colors ${
         darkMode
           ? "bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100"
           : "bg-gradient-to-br from-sky-50 to-sky-100 text-gray-900"
       }`}
     >
+      {/* ✅ Leaderboard Box */}
+      <div
+        className={`w-64 rounded-2xl shadow-lg p-4 h-fit sticky top-6 ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}
+      >
+        <h2 className="text-xl font-bold mb-4 text-center text-sky-500">
+          Leaderboard
+        </h2>
+        <div className="space-y-3">
+          {leaderboard.length > 0 ? (
+            leaderboard.map((player, index) => {
+              const lastSeenFormat = formatDateTime(player.lastSeen);
+              return (
+                <div
+                  key={index}
+                  className={`flex flex-col items-center p-3 rounded-xl shadow relative ${
+                    darkMode ? "bg-gray-700" : "bg-sky-50"
+                  }`}
+                >
+                  {index < 3 && (
+                    <div className="absolute top-2 right-2">
+                      {getMedal(index)}
+                    </div>
+                  )}
+                  <div className="relative">
+                    <img
+                      src={player.avatar || userdp}
+                      alt="User"
+                      className="w-12 h-12 rounded-full border-2 border-sky-500 object-cover"
+                    />
+                    {/* ✅ Status Dot */}
+                    <span
+                      className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white shadow-md ${
+                        player.isOnline ? "bg-green-500" : "bg-gray-400"
+                      }`}
+                    ></span>
+                  </div>
+                  <p className="mt-2 font-semibold">{player.fullName}</p>
+                  <p className="text-sm opacity-75">
+                    Score:{" "}
+                    <span className="font-bold text-sky-600">
+                      {player.totalScore}
+                    </span>
+                  </p>
+                  {!player.isOnline && player.lastSeen && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Last seen: {lastSeenFormat?.date} {lastSeenFormat?.time}
+                    </p>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-center text-sm opacity-70">No scores yet</p>
+          )}
+        </div>
+      </div>
+
+
+  
+
+      {/* ✅ Profile Content (right side) */}
       <div
         className={`shadow-2xl rounded-2xl w-full max-w-4xl p-8 md:p-12 relative transition-colors ${
           darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"

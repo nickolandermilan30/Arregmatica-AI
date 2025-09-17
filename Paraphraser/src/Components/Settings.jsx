@@ -7,7 +7,6 @@ import {
   FileText,
   Type,
   Wand2,
-  Award,
   SunMoon,
 } from "lucide-react";
 import { auth, database } from "../firebase";
@@ -27,7 +26,6 @@ const Settings = () => {
   const [dictionaryCount, setDictionaryCount] = useState(0);
   const [essayCount, setEssayCount] = useState(0);
   const [humanizeCount, setHumanizeCount] = useState(0);
-  const [quizScore, setQuizScore] = useState(0); // ✅ Quiz state
 
   const [showModal, setShowModal] = useState(false);
   const { darkMode, setDarkMode } = useDarkMode(); // ✅ use context
@@ -48,7 +46,6 @@ const Settings = () => {
     const dictRef = ref(database, "dictionary");
     const essayRef = ref(database, "essays");
     const humanizeRef = ref(database, "humanize");
-    const quizRef = ref(database, "scores");
 
     const grammarUnsub = onValue(grammarRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -83,27 +80,12 @@ const Settings = () => {
       setHumanizeCount(Object.values(data).length);
     });
 
-    // ✅ Fetch quiz totalScore
-    const quizUnsub = onValue(quizRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      let total = 0;
-      Object.values(data).forEach((userScores) => {
-        if (typeof userScores === "object") {
-          Object.values(userScores).forEach((entry) => {
-            total += entry.totalScore || 0;
-          });
-        }
-      });
-      setQuizScore(total);
-    });
-
     return () => {
       grammarUnsub();
       improveUnsub();
       dictUnsub();
       essayUnsub();
       humanizeUnsub();
-      quizUnsub();
     };
   }, []);
 
@@ -115,14 +97,12 @@ const Settings = () => {
       await remove(ref(database, "dictionary"));
       await remove(ref(database, "essays"));
       await remove(ref(database, "humanize"));
-      await remove(ref(database, "scores"));
 
       setGrammarStats({ count: 0, avgPercent: 0 });
       setImproveCount(0);
       setDictionaryCount(0);
       setEssayCount(0);
       setHumanizeCount(0);
-      setQuizScore(0);
       setShowModal(false);
     } catch (error) {
       console.error("Failed to clear history:", error);
@@ -192,33 +172,35 @@ const Settings = () => {
             }`}
           >
             <h3 className="text-xl font-semibold mb-4">Account Info</h3>
-            {currentUser ? (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between border rounded-lg p-4 shadow-sm space-y-4 md:space-y-0 md:space-x-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <img
-                      src={AIImage}
-                      alt="Profile"
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border border-white rounded-full"></span>
-                  </div>
-                  <p className="font-semibold">
-                    {currentUser.displayName || "No Name"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail size={18} /> <span>{currentUser.email}</span>
-                </div>
-                <div className="text-xs md:text-sm space-y-1 text-right">
-                  <p>Created: {currentUser.metadata?.creationTime}</p>
-                  <p>Last Sign-in: {currentUser.metadata?.lastSignInTime}</p>
-                  <p>UID: {currentUser.uid}</p>
-                </div>
-              </div>
-            ) : (
-              <p>No user logged in.</p>
-            )}
+  {currentUser ? (
+  <div className="flex flex-col md:flex-row md:items-center md:justify-between border rounded-lg p-4 shadow-sm space-y-4 md:space-y-0 md:space-x-4">
+    <div className="flex items-center gap-3">
+      <div className="relative">
+        <img
+          src={currentUser.photoURL || AIImage}
+          alt="Profile"
+          className="w-12 h-12 rounded-full object-cover border border-blue-500" 
+        />
+        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border border-white rounded-full"></span>
+      </div>
+      <p className="font-semibold">
+        {currentUser.displayName || "No Name"}
+      </p>
+    </div>
+    <div className="flex items-center gap-2 text-sm">
+      <Mail size={18} /> <span>{currentUser.email}</span>
+    </div>
+    <div className="text-xs md:text-sm space-y-1 text-right">
+      <p>Created: {currentUser.metadata?.creationTime}</p>
+      <p>Last Sign-in: {currentUser.metadata?.lastSignInTime}</p>
+      <p>UID: {currentUser.uid}</p>
+    </div>
+  </div>
+) : (
+  <p>No user logged in.</p>
+)}
+
+
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => navigate("/profile")}
@@ -240,55 +222,71 @@ const Settings = () => {
             <h3 className="text-xl font-semibold mb-6">Data Controls</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Grammar */}
-              <div className="p-6 border rounded-xl shadow-sm bg-sky-50 dark:bg-gray-700">
+              <div
+                className={`p-6 border rounded-xl shadow-sm transition-colors duration-300 ${
+                  darkMode ? "bg-gray-700" : "bg-sky-50"
+                }`}
+              >
                 <h4 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-sky-400 mb-2">
                   <Type size={18} /> Grammar
                 </h4>
                 <p>Total Checks: {grammarStats.count}</p>
                 <p>Avg Percent: {grammarStats.avgPercent}%</p>
               </div>
+
               {/* Improve */}
-              <div className="p-6 border rounded-xl shadow-sm bg-green-50 dark:bg-gray-700">
+              <div
+                className={`p-6 border rounded-xl shadow-sm transition-colors duration-300 ${
+                  darkMode ? "bg-gray-700" : "bg-green-50"
+                }`}
+              >
                 <h4 className="flex items-center gap-2 text-lg font-semibold text-green-700 dark:text-green-400 mb-2">
                   <Wand2 size={18} /> Improve
                 </h4>
                 <p>Total Improves: {improveCount}</p>
               </div>
+
               {/* Dictionary */}
-              <div className="p-6 border rounded-xl shadow-sm bg-yellow-50 dark:bg-gray-700">
+              <div
+                className={`p-6 border rounded-xl shadow-sm transition-colors duration-300 ${
+                  darkMode ? "bg-gray-700" : "bg-yellow-50"
+                }`}
+              >
                 <h4 className="flex items-center gap-2 text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
                   <BookOpen size={18} /> Dictionary
                 </h4>
                 <p>Entries: {dictionaryCount}</p>
               </div>
+
               {/* Essays */}
-              <div className="p-6 border rounded-xl shadow-sm bg-indigo-50 dark:bg-gray-700">
+              <div
+                className={`p-6 border rounded-xl shadow-sm transition-colors duration-300 ${
+                  darkMode ? "bg-gray-700" : "bg-indigo-50"
+                }`}
+              >
                 <h4 className="flex items-center gap-2 text-lg font-semibold text-indigo-700 dark:text-indigo-400 mb-2">
                   <FileText size={18} /> Essays
                 </h4>
                 <p>Saved Essays: {essayCount}</p>
               </div>
+
               {/* Humanize */}
-              <div className="p-6 border rounded-xl shadow-sm bg-pink-50 dark:bg-gray-700">
+              <div
+                className={`p-6 border rounded-xl shadow-sm transition-colors duration-300 ${
+                  darkMode ? "bg-gray-700" : "bg-pink-50"
+                }`}
+              >
                 <h4 className="flex items-center gap-2 text-lg font-semibold text-pink-700 dark:text-pink-400 mb-2">
                   <User size={18} /> Humanize
                 </h4>
                 <p>Converted Texts: {humanizeCount}</p>
-              </div>
-              {/* Quiz */}
-              <div className="p-6 border rounded-xl shadow-sm bg-orange-50 dark:bg-gray-700">
-                <h4 className="flex items-center gap-2 text-lg font-semibold text-orange-700 dark:text-orange-400 mb-2">
-                  <Award size={18} /> Quiz
-                </h4>
-                <p>Total Score: {quizScore}</p>
               </div>
             </div>
             {(grammarStats.count > 0 ||
               improveCount > 0 ||
               dictionaryCount > 0 ||
               essayCount > 0 ||
-              humanizeCount > 0 ||
-              quizScore > 0) && (
+              humanizeCount > 0) && (
               <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setShowModal(true)}
@@ -384,9 +382,9 @@ const Settings = () => {
             <p className="mb-6">
               You have <b>{grammarStats.count}</b> grammar items,{" "}
               <b>{improveCount}</b> improve items, <b>{dictionaryCount}</b>{" "}
-              dictionary entries, <b>{essayCount}</b> essays,{" "}
-              <b>{humanizeCount}</b> humanize items, and <b>{quizScore}</b> quiz
-              score. Are you sure you want to clear all?
+              dictionary entries, <b>{essayCount}</b> essays, and{" "}
+              <b>{humanizeCount}</b> humanize items. Are you sure you want to
+              clear all?
             </p>
             <div className="flex gap-3">
               <button

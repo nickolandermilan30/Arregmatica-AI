@@ -44,6 +44,16 @@ const Navbar = () => {
     }
   };
 
+  // Helper function: kunin initials kung walang profile pic
+  const getInitials = (nameOrEmail) => {
+    if (!nameOrEmail) return "?";
+    const name = nameOrEmail.split(" ");
+    if (name.length > 1) {
+      return name[0][0].toUpperCase() + name[1][0].toUpperCase();
+    }
+    return nameOrEmail[0].toUpperCase();
+  };
+
   return (
     <>
       {/* Navbar */}
@@ -60,16 +70,10 @@ const Navbar = () => {
         {/* Links - Desktop */}
         <div className="hidden md:flex flex-1 justify-center">
           <div className="flex space-x-10 text-lg font-medium items-center">
-            <Link
-              to="/landingpage"
-              className={`hover:text-blue-500`}
-            >
+            <Link to="/landingpage" className={`hover:text-blue-500`}>
               Home
             </Link>
-            <Link
-              to="/services"
-              className={`hover:text-blue-500`}
-            >
+            <Link to="/services" className={`hover:text-blue-500`}>
               Arregmatica AI
             </Link>
 
@@ -97,9 +101,7 @@ const Navbar = () => {
                   <Link
                     to="/home"
                     className={`block px-4 py-2 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Text Enhancer
@@ -107,9 +109,7 @@ const Navbar = () => {
                   <Link
                     to="/dictionary"
                     className={`block px-4 py-2 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Dictionary
@@ -117,9 +117,7 @@ const Navbar = () => {
                   <Link
                     to="/humanize"
                     className={`block px-4 py-2 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Humanize Word
@@ -127,9 +125,7 @@ const Navbar = () => {
                   <Link
                     to="/essa-checker"
                     className={`block px-4 py-2 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Essay Checker
@@ -137,9 +133,7 @@ const Navbar = () => {
                   <Link
                     to="/history"
                     className={`block px-4 py-2 border-t mt-1 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     History
@@ -148,10 +142,7 @@ const Navbar = () => {
               )}
             </div>
 
-            <Link
-              to="/about"
-              className={`hover:text-blue-500`}
-            >
+            <Link to="/about" className={`hover:text-blue-500`}>
               About
             </Link>
           </div>
@@ -169,6 +160,23 @@ const Navbar = () => {
                     : "bg-gray-100 hover:bg-gray-200"
                 }`}
               >
+                {/* ✅ Profile picture with green dot */}
+                <div className="relative w-8 h-8">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-sky-500 text-white font-bold">
+                      {getInitials(user.displayName || user.email)}
+                    </div>
+                  )}
+                  {/* Green dot indicator */}
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                </div>
+
                 <span className="font-medium">
                   {user.displayName || user.email}
                 </span>
@@ -184,9 +192,7 @@ const Navbar = () => {
                   <Link
                     to="/profile"
                     className={`block px-4 py-2 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Profile
@@ -194,9 +200,7 @@ const Navbar = () => {
                   <Link
                     to="/settings"
                     className={`block px-4 py-2 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Settings
@@ -207,9 +211,7 @@ const Navbar = () => {
                       setDropdownOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-red-600 ${
-                      darkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-100"
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Logout
@@ -353,6 +355,22 @@ const Navbar = () => {
                   darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                 }`}
               >
+                {/* ✅ Profile picture with green dot */}
+                <div className="relative w-8 h-8">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-sky-500 text-white font-bold">
+                      {getInitials(user.displayName || user.email)}
+                    </div>
+                  )}
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                </div>
+
                 <span className="font-medium">
                   {user.displayName || user.email}
                 </span>
