@@ -11,6 +11,7 @@ import Login from "./Home/Login";
 import Register from "./Home/Register";
 import Profile from "./Components/Profile";
 import History from "./Components/History";
+import Stories from "./Feed/Feeds";
 import ProtectedRoute from "./hooks/ProtectedRoute"; 
 import Dictionary from "./Components/Dictionary";
 import Humanize from "./Components/Humanize"; 
@@ -42,6 +43,7 @@ const App = () => {
                   <Route path="/quiz" element={<Quiz />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/history" element={<History />} />
+                  <Route path="/feed" element={<Stories />} />
                   <Route path="/dictionary" element={<Dictionary />} />
                   <Route path="/essa-checker" element={<EssaChecker />} />
                   <Route path="/humanize" element={<Humanize />} />

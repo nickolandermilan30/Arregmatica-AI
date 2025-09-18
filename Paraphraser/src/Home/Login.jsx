@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { auth } from "../firebase"; 
+import { auth } from "../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { getDatabase, ref, set } from "firebase/database"; // ✅ import database
 import bgImage from "../assets/bg_picture.png";
 
 const Login = () => {
@@ -15,7 +16,30 @@ const Login = () => {
     const password = e.target.password.value;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      // ✅ Prepare user data
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        username: user.displayName || "No username",
+        avatar:
+          user.photoURL ||
+          `gs://arregmatica.firebasestorage.app/avatars/${user.uid}.png`,
+        lastSignIn: user.metadata.lastSignInTime,
+        accountCreated: user.metadata.creationTime,
+      };
+
+      // ✅ Save to Realtime Database
+      const db = getDatabase();
+      await set(ref(db, "accounts/" + user.uid), userData);
+
       navigate("/landingpage");
     } catch (err) {
       alert(err.message);

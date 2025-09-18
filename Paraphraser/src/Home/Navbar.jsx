@@ -73,6 +73,9 @@ const Navbar = () => {
             <Link to="/landingpage" className={`hover:text-blue-500`}>
               Home
             </Link>
+            <Link to="/feed" className={`hover:text-blue-500`}>
+              Feed
+            </Link>
             <Link to="/services" className={`hover:text-blue-500`}>
               Arregmatica AI
             </Link>
@@ -262,6 +265,9 @@ const Navbar = () => {
         <div className="flex flex-col p-4 space-y-4 text-lg">
           <Link to="/landingpage" onClick={() => setIsOpen(false)}>
             Home
+          </Link>
+          <Link to="/feed" onClick={() => setIsOpen(false)}>
+            Feed
           </Link>
           <Link to="/services" onClick={() => setIsOpen(false)}>
             Arregmatica AI

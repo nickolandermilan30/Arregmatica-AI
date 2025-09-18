@@ -6,14 +6,29 @@ import { signOut, updateProfile } from "firebase/auth";
 import {
   getDatabase,
   ref,
-  get,
   onValue,
   onDisconnect,
   set,
   update,
 } from "firebase/database";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useDarkMode } from "../Theme/DarkModeContext";
 import { FaMedal } from "react-icons/fa";
+import { FiX } from "react-icons/fi";
+
+// ✅ Import all avatars
+import cat1 from "../assets/Avatar/cat (1).jpg";
+import cat2 from "../assets/Avatar/cat (2).jpg";
+import cat3 from "../assets/Avatar/cat (3).jpg";
+import cat4 from "../assets/Avatar/cat (4).jpg";
+import cat5 from "../assets/Avatar/cat (5).jpg";
+import cat6 from "../assets/Avatar/cat (6).jpg";
+import cat7 from "../assets/Avatar/cat (7).jpg";
+import cat8 from "../assets/Avatar/cat (8).jpg";
+import cat9 from "../assets/Avatar/cat (9).jpg";
+import cat10 from "../assets/Avatar/cat (10).jpg";
+
+const avatars = [cat1, cat2, cat3, cat4, cat5, cat6, cat7, cat8, cat9, cat10];
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -23,9 +38,12 @@ const Profile = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [totalScore, setTotalScore] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [avatarModal, setAvatarModal] = useState(false); // ✅ avatar picker modal
   const { darkMode } = useDarkMode();
 
   const db = getDatabase();
+  const storage = getStorage();
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -34,61 +52,58 @@ const Profile = () => {
     setUser(currentUser);
     setNewName(currentUser.displayName || "");
 
-    // ✅ Setup presence
     const userStatusRef = ref(db, `scores/${currentUser.uid}`);
     const isOnlineRef = ref(db, `.info/connected`);
 
     const handlePresence = onValue(isOnlineRef, (snapshot) => {
-      if (snapshot.val() === false) {
-        return;
-      }
+      if (snapshot.val() === false) return;
 
-      // kapag disconnected -> set status to offline
       onDisconnect(userStatusRef).update({
         isOnline: false,
         lastSeen: new Date().toISOString(),
       });
 
-      // kapag connected -> update as online
       update(userStatusRef, {
         isOnline: true,
         lastSeen: new Date().toISOString(),
       });
     });
 
-    // ✅ Realtime fetch totalScore + leaderboard
     const scoresRef = ref(db, "scores");
-    const unsubscribeScores = onValue(scoresRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const scoresData = snapshot.val();
-        let foundScore = 0;
+const unsubscribeScores = onValue(scoresRef, (snapshot) => {
+  if (snapshot.exists()) {
+    const scoresData = snapshot.val();
+    let foundScore = 0;
 
-        const usersArray = Object.keys(scoresData).map((uid) => {
-          const entry = scoresData[uid];
-          if (uid === currentUser.uid) {
-            foundScore = entry.totalScore || 0;
-          }
-
-          return {
-            fullName: entry.fullName,
-            totalScore: entry.totalScore || 0,
-            avatar: entry.avatar || null,
-            uid,
-            isOnline: entry.isOnline || false,
-            lastSeen: entry.lastSeen || null,
-          };
-        });
-
-        // sort by score
-        usersArray.sort((a, b) => b.totalScore - a.totalScore);
-
-        setLeaderboard(usersArray);
-        setTotalScore(foundScore);
-      } else {
-        setLeaderboard([]);
-        setTotalScore(0);
+    const usersArray = Object.keys(scoresData).map((uid) => {
+      const entry = scoresData[uid];
+      if (uid === currentUser.uid) {
+        foundScore = entry.totalScore || 0;
       }
+
+      return {
+        fullName: entry.fullName,
+        totalScore: entry.totalScore || 0,
+        avatar: entry.avatar || null,
+        uid,
+        isOnline: entry.isOnline || false,
+        lastSeen: entry.lastSeen || null,
+      };
     });
+
+    // ✅ Only keep users with score > 0
+    const filteredUsers = usersArray.filter(user => user.totalScore > 0);
+
+    filteredUsers.sort((a, b) => b.totalScore - a.totalScore);
+
+    setLeaderboard(filteredUsers);
+    setTotalScore(foundScore);
+  } else {
+    setLeaderboard([]);
+    setTotalScore(0);
+  }
+});
+
 
     return () => {
       handlePresence();
@@ -111,48 +126,86 @@ const Profile = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    try {
-      if (
-        window.confirm(
-          "Are you sure you want to delete your account? This action cannot be undone."
-        )
-      ) {
-        const userStatusRef = ref(db, `scores/${auth.currentUser.uid}`);
-        await set(userStatusRef, null); // delete user from scores
+const handleDeleteAccount = async () => {
+  try {
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      // ✅ Delete from scores
+      const userScoreRef = ref(db, `scores/${auth.currentUser.uid}`);
+      await set(userScoreRef, null);
 
-        await auth.currentUser.delete();
-        setModalMessage("Account deleted successfully.");
-        setShowModal(true);
-        setTimeout(() => (window.location.href = "/"), 2000);
-      }
-    } catch (error) {
-      console.error("Delete account failed:", error);
-      setModalMessage(
-        "Error: You may need to re-login before deleting your account."
-      );
+      // ✅ Delete from accounts
+      const userAccountRef = ref(db, `accounts/${auth.currentUser.uid}`);
+      await set(userAccountRef, null);
+
+      // ✅ Delete Firebase Auth account
+      await auth.currentUser.delete();
+
+      setModalMessage("Account deleted successfully.");
       setShowModal(true);
+      setTimeout(() => (window.location.href = "/"), 2000);
     }
-  };
+  } catch (error) {
+    console.error("Delete account failed:", error);
+    setModalMessage("Error: You may need to re-login before deleting your account.");
+    setShowModal(true);
+  }
+};
 
-  const handleSaveName = async () => {
-    try {
-      await updateProfile(auth.currentUser, { displayName: newName });
-      setUser({ ...auth.currentUser, displayName: newName });
 
-      // update din sa database
-      const userRef = ref(db, `scores/${auth.currentUser.uid}`);
-      await update(userRef, { fullName: newName });
+const handleSaveName = async () => {
+  try {
+    await updateProfile(auth.currentUser, { displayName: newName });
+    setUser({ ...auth.currentUser, displayName: newName });
 
-      setEditingName(false);
-      setModalMessage("Name updated successfully! 🎉");
-      setShowModal(true);
-    } catch (error) {
-      console.error("Failed to update name:", error);
-      setModalMessage("Error updating name. Please try again.");
-      setShowModal(true);
-    }
-  };
+    // ✅ Update in scores
+    const userScoreRef = ref(db, `scores/${auth.currentUser.uid}`);
+    await update(userScoreRef, { fullName: newName });
+
+    // ✅ Update in accounts
+    const userAccountRef = ref(db, `accounts/${auth.currentUser.uid}`);
+    await update(userAccountRef, { username: newName });
+
+    setEditingName(false);
+    setModalMessage("Name updated successfully! 🎉");
+    setShowModal(true);
+  } catch (error) {
+    console.error("Failed to update name:", error);
+    setModalMessage("Error updating name. Please try again.");
+    setShowModal(true);
+  }
+};
+
+
+const handleAvatarChange = async (avatar) => {
+  try {
+    const response = await fetch(avatar);
+    const blob = await response.blob();
+
+    const fileRef = storageRef(storage, `avatars/${auth.currentUser.uid}.jpg`);
+    await uploadBytes(fileRef, blob);
+    const downloadURL = await getDownloadURL(fileRef);
+
+    await updateProfile(auth.currentUser, { photoURL: downloadURL });
+    setUser({ ...auth.currentUser, photoURL: downloadURL });
+
+    // ✅ Update in scores
+    const userScoreRef = ref(db, `scores/${auth.currentUser.uid}`);
+    await update(userScoreRef, { avatar: downloadURL });
+
+    // ✅ Update in accounts
+    const userAccountRef = ref(db, `accounts/${auth.currentUser.uid}`);
+    await update(userAccountRef, { avatar: downloadURL });
+
+    setAvatarModal(false);
+    setModalMessage("Profile picture updated successfully! 🎉");
+    setShowModal(true);
+  } catch (error) {
+    console.error("Failed to update avatar:", error);
+    setModalMessage("Error updating avatar. Please try again.");
+    setShowModal(true);
+  }
+};
+
 
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
@@ -175,22 +228,41 @@ const Profile = () => {
 
   return (
     <div
-      className={`min-h-screen flex items-start justify-center p-6 gap-6 transition-colors ${
+      className={`min-h-screen flex items-start justify-center p-6 gap-6 transition-colors relative ${
         darkMode
           ? "bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100"
           : "bg-gradient-to-br from-sky-50 to-sky-100 text-gray-900"
       }`}
     >
-      {/* ✅ Leaderboard Box */}
+      {/* ✅ Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+        ></div>
+      )}
+
+      {/* Leaderboard Sidebar */}
       <div
-        className={`w-64 rounded-2xl shadow-lg p-4 h-fit sticky top-6 ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        }`}
+        className={`fixed md:sticky top-0 left-0 h-full md:h-fit w-72 md:w-64 transform transition-transform duration-300 z-50 md:z-auto p-4 shadow-lg rounded-r-2xl md:rounded-2xl ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        } ${darkMode ? "bg-gray-800" : "bg-white"}`}
       >
-        <h2 className="text-xl font-bold mb-4 text-center text-sky-500">
+        <div className="flex justify-between items-center mb-4 md:hidden">
+          <h2 className="text-lg font-bold text-sky-500">Leaderboard</h2>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <FiX size={22} />
+          </button>
+        </div>
+
+        <h2 className="hidden md:block text-xl font-bold mb-4 text-center text-sky-500">
           Leaderboard
         </h2>
-        <div className="space-y-3">
+
+        <div className="space-y-3 overflow-y-auto max-h-[80vh] md:max-h-none">
           {leaderboard.length > 0 ? (
             leaderboard.map((player, index) => {
               const lastSeenFormat = formatDateTime(player.lastSeen);
@@ -212,7 +284,6 @@ const Profile = () => {
                       alt="User"
                       className="w-12 h-12 rounded-full border-2 border-sky-500 object-cover"
                     />
-                    {/* ✅ Status Dot */}
                     <span
                       className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white shadow-md ${
                         player.isOnline ? "bg-green-500" : "bg-gray-400"
@@ -240,10 +311,7 @@ const Profile = () => {
         </div>
       </div>
 
-
-  
-
-      {/* ✅ Profile Content (right side) */}
+      {/* ✅ Profile Content */}
       <div
         className={`shadow-2xl rounded-2xl w-full max-w-4xl p-8 md:p-12 relative transition-colors ${
           darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
@@ -261,7 +329,10 @@ const Profile = () => {
                 darkMode ? "bg-gray-700" : "bg-sky-50"
               }`}
             >
-              <div className="relative">
+              <div
+                className="relative cursor-pointer"
+                onClick={() => setAvatarModal(true)} // ✅ open avatar picker modal
+              >
                 <img
                   src={user.photoURL || userdp}
                   alt="Profile"
@@ -273,18 +344,23 @@ const Profile = () => {
                 {user.displayName || "No Name"}
               </p>
               <p className="text-sm mt-1 text-center opacity-75">Active User</p>
+              <button
+                onClick={() => setAvatarModal(true)}
+                className="mt-4 bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600"
+              >
+                Change Avatar
+              </button>
             </div>
 
             {/* User Info */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Editable Username */}
+              {/* Username */}
               <div
                 className={`rounded-xl p-5 shadow-md hover:shadow-lg transition flex flex-col gap-4 ${
                   darkMode ? "bg-gray-700" : "bg-gray-50"
                 }`}
               >
                 <p className="text-sm opacity-75">Username</p>
-
                 {editingName ? (
                   <>
                     <input
@@ -393,8 +469,16 @@ const Profile = () => {
           <p className="text-center opacity-75">No user is logged in.</p>
         )}
 
-        {/* Action Buttons */}
+        {/* ✅ Action Buttons */}
         <div className="flex flex-col md:flex-row justify-center md:justify-end gap-4 mt-10">
+          {/* ✅ Mobile Only: View Leaderboard Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-full md:hidden bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition-transform transform hover:scale-105"
+          >
+            View Leaderboard
+          </button>
+
           <button
             onClick={handleLogout}
             className="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition-transform transform hover:scale-105"
@@ -414,7 +498,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* ✅ Notification Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/40 z-50">
           <div
@@ -430,6 +514,38 @@ const Profile = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Avatar Picker Modal */}
+      {avatarModal && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/40 z-50">
+          <div
+            className={`rounded-2xl shadow-xl p-6 max-w-lg w-full transition-colors ${
+              darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+            }`}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Choose Your Avatar</h2>
+              <button
+                onClick={() => setAvatarModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FiX size={22} />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+              {avatars.map((avatar, index) => (
+                <img
+                  key={index}
+                  src={avatar}
+                  alt={`avatar-${index}`}
+                  className="w-20 h-20 rounded-full border-2 border-transparent hover:border-sky-500 cursor-pointer object-cover"
+                  onClick={() => handleAvatarChange(avatar)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
