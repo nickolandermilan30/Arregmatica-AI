@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import logo from "../assets/logopng.png";
-import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ dark mode
+import { useDarkMode } from "../Theme/DarkModeContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,8 +13,9 @@ const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false); // user dropdown
   const [dictDropdown, setDictDropdown] = useState(false); // tools dropdown (desktop)
   const [mobileDictDropdown, setMobileDictDropdown] = useState(false); // tools dropdown (mobile)
-  const { darkMode } = useDarkMode(); // ✅ dark mode
+  const { darkMode } = useDarkMode();
   const navigate = useNavigate();
+  const navbarRef = useRef(null);
 
   // Listen for logged-in user
   useEffect(() => {
@@ -24,7 +25,7 @@ const Navbar = () => {
     return () => unsubscribe();
   }, []);
 
-  // Auto-close sidebar kapag resize to desktop
+  // Auto-close sidebar on desktop resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -33,6 +34,19 @@ const Navbar = () => {
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (navbarRef.current && !navbarRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+        setDictDropdown(false);
+        setMobileDictDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -44,7 +58,6 @@ const Navbar = () => {
     }
   };
 
-  // Helper function: kunin initials kung walang profile pic
   const getInitials = (nameOrEmail) => {
     if (!nameOrEmail) return "?";
     const name = nameOrEmail.split(" ");
@@ -56,9 +69,9 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Navbar */}
       <nav
-        className={`px-6 py-3 flex items-center justify-between shadow ${
+        ref={navbarRef}
+        className={`px-6 py-3 flex items-center justify-between shadow relative z-50 ${
           darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
         }`}
       >
@@ -69,14 +82,14 @@ const Navbar = () => {
 
         {/* Links - Desktop */}
         <div className="hidden md:flex flex-1 justify-center">
-          <div className="flex space-x-10 text-lg font-medium items-center">
-            <Link to="/landingpage" className={`hover:text-blue-500`}>
+          <div className="flex space-x-10 text-lg font-medium items-center text-center">
+            <Link to="/landingpage" className="hover:text-blue-500">
               Home
             </Link>
-            <Link to="/feed" className={`hover:text-blue-500`}>
-              Feed
+            <Link to="/feed" className="hover:text-blue-500">
+              Community
             </Link>
-            <Link to="/services" className={`hover:text-blue-500`}>
+            <Link to="/services" className="hover:text-blue-500">
               Arregmatica AI
             </Link>
 
@@ -98,45 +111,45 @@ const Navbar = () => {
               {dictDropdown && (
                 <div
                   className={`absolute left-0 mt-2 w-56 rounded-lg shadow-lg py-2 z-50 ${
-                    darkMode ? "bg-gray-800 text-gray-100" : "bg-white"
+                    darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
                   }`}
                 >
                   <Link
                     to="/home"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Text Enhancer
                   </Link>
                   <Link
                     to="/dictionary"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Dictionary
                   </Link>
                   <Link
                     to="/humanize"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Humanize Word
                   </Link>
                   <Link
                     to="/essa-checker"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Essay Checker
                   </Link>
                   <Link
                     to="/history"
-                    className={`block px-4 py-2 border-t mt-1 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 border-t mt-1 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     History
@@ -145,7 +158,7 @@ const Navbar = () => {
               )}
             </div>
 
-            <Link to="/about" className={`hover:text-blue-500`}>
+            <Link to="/about" className="hover:text-blue-500">
               About
             </Link>
           </div>
@@ -158,12 +171,9 @@ const Navbar = () => {
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                  darkMode
-                    ? "bg-gray-700 hover:bg-gray-600"
-                    : "bg-gray-100 hover:bg-gray-200"
+                  darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-100 hover:bg-gray-200"
                 }`}
               >
-                {/* ✅ Profile picture with green dot */}
                 <div className="relative w-8 h-8">
                   {user.photoURL ? (
                     <img
@@ -176,45 +186,39 @@ const Navbar = () => {
                       {getInitials(user.displayName || user.email)}
                     </div>
                   )}
-                  {/* Green dot indicator */}
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                 </div>
 
-                <span className="font-medium">
-                  {user.displayName || user.email}
-                </span>
+                <span className="font-medium">{user.displayName || user.email}</span>
                 <ChevronDown size={18} />
               </button>
 
               {dropdownOpen && (
                 <div
                   className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-2 z-50 ${
-                    darkMode ? "bg-gray-800 text-gray-100" : "bg-white"
+                    darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
                   }`}
                 >
                   <Link
                     to="/profile"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Profile
                   </Link>
                   <Link
                     to="/settings"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Settings
                   </Link>
                   <button
-                    onClick={() => {
-                      setShowModal(true);
-                      setDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-red-600 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    onClick={() => setShowModal(true)}
+                    className={`w-full text-left px-4 py-2 text-red-600 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
                     }`}
                   >
                     Logout
@@ -232,7 +236,7 @@ const Navbar = () => {
           </Link>
         </div>
 
-        {/* Burger - Mobile */}
+        {/* Mobile Burger */}
         <button
           className="md:hidden text-sky-500 focus:outline-none"
           onClick={() => setIsOpen(true)}
@@ -241,189 +245,156 @@ const Navbar = () => {
         </button>
       </nav>
 
-      {/* Overlay for Mobile */}
+      {/* Mobile Sidebar */}
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - Mobile */}
-      <div
-        className={`fixed top-0 right-0 h-full w-64 shadow-lg z-50 transform transition-transform duration-300 ${
-          darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
-        } ${isOpen ? "translate-x-0" : "translate-x-full"} overflow-y-auto`}
-      >
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-bold">Menu</h2>
-          <button onClick={() => setIsOpen(false)} className="text-sky-500">
-            <X size={28} />
-          </button>
-        </div>
-
-        <div className="flex flex-col p-4 space-y-4 text-lg">
-          <Link to="/landingpage" onClick={() => setIsOpen(false)}>
-            Home
-          </Link>
-          <Link to="/feed" onClick={() => setIsOpen(false)}>
-            Feed
-          </Link>
-          <Link to="/services" onClick={() => setIsOpen(false)}>
-            Arregmatica AI
-          </Link>
-
-          {/* Tools Dropdown - Mobile */}
-          <div>
-            <button
-              onClick={() => setMobileDictDropdown(!mobileDictDropdown)}
-              className={`flex items-center justify-between w-full px-2 py-2 rounded-lg ${
-                darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-              }`}
-            >
-              <span>Tools</span>
-              <ChevronDown
-                size={18}
-                className={`transition-transform ${
-                  mobileDictDropdown ? "rotate-180" : "rotate-0"
-                }`}
-              />
-            </button>
-
-            {mobileDictDropdown && (
-              <div className="ml-4 mt-2 flex flex-col space-y-2">
-                <Link
-                  to="/home"
-                  onClick={() => setIsOpen(false)}
-                  className={`px-2 py-1 rounded ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  }`}
-                >
-                  Text Enhancer
-                </Link>
-                <Link
-                  to="/dictionary"
-                  onClick={() => setIsOpen(false)}
-                  className={`px-2 py-1 rounded ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  }`}
-                >
-                  Dictionary
-                </Link>
-                <Link
-                  to="/humanize"
-                  onClick={() => setIsOpen(false)}
-                  className={`px-2 py-1 rounded ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  }`}
-                >
-                  Humanize Word
-                </Link>
-                <Link
-                  to="/essa-checker"
-                  onClick={() => setIsOpen(false)}
-                  className={`px-2 py-1 rounded ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  }`}
-                >
-                  Essay Checker
-                </Link>
-                <Link
-                  to="/history"
-                  onClick={() => setIsOpen(false)}
-                  className={`px-2 py-1 rounded border-t mt-2 ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  }`}
-                >
-                  History
-                </Link>
-              </div>
-            )}
-          </div>
-
-          <Link to="/about" onClick={() => setIsOpen(false)}>
-            About
-          </Link>
-          <Link
-            to="/quiz"
-            className="bg-sky-500 text-white px-4 py-2 rounded-lg text-center"
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
+          />
+          <div
+            className={`fixed top-0 right-0 h-full w-64 shadow-lg z-50 transform transition-transform duration-300 ${
+              darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
+            } ${isOpen ? "translate-x-0" : "translate-x-full"} overflow-y-auto`}
           >
-            Take Quiz
-          </Link>
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold">Menu</h2>
+              <button onClick={() => setIsOpen(false)} className="text-sky-500">
+                <X size={28} />
+              </button>
+            </div>
+            <div className="flex flex-col p-4 space-y-4 text-lg">
+              <Link to="/landingpage" onClick={() => setIsOpen(false)}>
+                Home
+              </Link>
+              <Link to="/feed" onClick={() => setIsOpen(false)}>
+                Community
+              </Link>
+              <Link to="/services" onClick={() => setIsOpen(false)}>
+                Arregmatica AI
+              </Link>
 
-          {/* User Dropdown - Mobile */}
-          {user && (
-            <div className="mt-6 border-t pt-4">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg transition ${
-                  darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                }`}
+              {/* Tools Mobile Dropdown */}
+              <div>
+                <button
+                  onClick={() => setMobileDictDropdown(!mobileDictDropdown)}
+                  className={`flex items-center justify-between w-full px-2 py-2 rounded-lg transition-colors duration-200 ${
+                    darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                  }`}
+                >
+                  <span>Tools</span>
+                  <ChevronDown
+                    size={18}
+                    className={`transition-transform ${
+                      mobileDictDropdown ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
+                {mobileDictDropdown && (
+                  <div className="ml-4 mt-2 flex flex-col space-y-2">
+                    {["home","dictionary","humanize","essa-checker","history"].map((path,key)=>(
+                      <Link
+                        key={key}
+                        to={`/${path}`}
+                        onClick={() => setIsOpen(false)}
+                        className={`px-2 py-1 rounded transition-colors duration-200 ${
+                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                        }`}
+                      >
+                        {path === "home"
+                          ? "Text Enhancer"
+                          : path === "dictionary"
+                          ? "Dictionary"
+                          : path === "humanize"
+                          ? "Humanize Word"
+                          : path === "essa-checker"
+                          ? "Essay Checker"
+                          : "History"}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Link to="/about" onClick={() => setIsOpen(false)}>
+                About
+              </Link>
+              <Link
+                to="/quiz"
+                className="bg-sky-500 text-white px-4 py-2 rounded-lg text-center"
+                onClick={() => setIsOpen(false)}
               >
-                {/* ✅ Profile picture with green dot */}
-                <div className="relative w-8 h-8">
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover border border-gray-300"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-sky-500 text-white font-bold">
-                      {getInitials(user.displayName || user.email)}
+                Take Quiz
+              </Link>
+
+              {/* Mobile User Dropdown */}
+              {user && (
+                <div className="mt-6 border-t pt-4">
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <div className="relative w-8 h-8">
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt="Profile"
+                          className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-sky-500 text-white font-bold">
+                          {getInitials(user.displayName || user.email)}
+                        </div>
+                      )}
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                    </div>
+
+                    <span className="font-medium">{user.displayName || user.email}</span>
+                    <ChevronDown size={18} />
+                  </button>
+
+                  {dropdownOpen && (
+                    <div
+                      className={`mt-2 rounded-lg shadow-md py-2 ${
+                        darkMode ? "bg-gray-800" : "bg-white"
+                      }`}
+                    >
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsOpen(false)}
+                        className={`block px-4 py-2 transition-colors duration-200 ${
+                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                        }`}
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/settings"
+                        onClick={() => setIsOpen(false)}
+                        className={`block px-4 py-2 transition-colors duration-200 ${
+                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                        }`}
+                      >
+                        Settings
+                      </Link>
+                      <button
+                        onClick={() => setShowModal(true)}
+                        className={`w-full text-left px-4 py-2 text-red-600 transition-colors duration-200 ${
+                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                        }`}
+                      >
+                        Logout
+                      </button>
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
-                </div>
-
-                <span className="font-medium">
-                  {user.displayName || user.email}
-                </span>
-                <ChevronDown size={18} />
-              </button>
-
-              {dropdownOpen && (
-                <div
-                  className={`mt-2 rounded-lg shadow-md py-2 ${
-                    darkMode ? "bg-gray-800" : "bg-white"
-                  }`}
-                >
-                  <Link
-                    to="/profile"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                    }`}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    to="/settings"
-                    className={`block px-4 py-2 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                    }`}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Settings
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setShowModal(true);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-red-600 ${
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                    }`}
-                  >
-                    Logout
-                  </button>
                 </div>
               )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showModal && (

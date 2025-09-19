@@ -1,37 +1,71 @@
 import React, { useState, useEffect } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, update } from "firebase/database";
+import { getAuth } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 import FeedNavbar from "./FeedNavbar";
 import PostModal from "./Modal/Post";
+import ImageLightbox from "./ImageLightbox";
+import Comments from "./Modal/Comments";
 import userdp from "../assets/userdp.png";
+import { FaHeart, FaRegHeart, FaComment, FaRetweet } from "react-icons/fa";
+import { FaStar } from "react-icons/fa6";
+import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ import context
 
 const Feeds = () => {
   const [showPostModal, setShowPostModal] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
+  const [userInteractions, setUserInteractions] = useState({});
+  const [selectedPost, setSelectedPost] = useState(null);
+
   const db = getDatabase();
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  const navigate = useNavigate();
+  const { darkMode } = useDarkMode(); // ✅ use dark mode
 
   useEffect(() => {
+    if (!currentUser) return;
+
     const accountsRef = ref(db, "accounts");
     const unsubscribe = onValue(accountsRef, (snapshot) => {
       const allPosts = [];
       if (snapshot.exists()) {
         const data = snapshot.val();
-        Object.values(data).forEach((account) => {
-          const userPosts = account.posts ? Object.values(account.posts) : [];
-          userPosts.forEach((post) => {
+        Object.entries(data).forEach(([uid, account]) => {
+          const userPosts = account.posts ? Object.entries(account.posts) : [];
+          userPosts.forEach(([postId, post]) => {
             allPosts.push({
               ...post,
+              postId,
               username: account.username,
               avatar: account.avatar,
-              uid: account.uid,
+              uid,
+              likeCount: post.likeCount || 0,
+              repostCount: post.repostCount || 0,
+              likedBy: post.likedBy || {},
+              repostedBy: post.repostedBy || {},
+              comments: post.comments || {},
             });
           });
         });
+
         allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setPosts(allPosts);
+
+        const interactions = {};
+        allPosts.forEach((post, idx) => {
+          interactions[idx] = {
+            liked: !!post.likedBy[currentUser.uid],
+            reposted: !!post.repostedBy[currentUser.uid],
+          };
+        });
+        setUserInteractions(interactions);
       }
     });
+
     return () => unsubscribe();
-  }, [db]);
+  }, [db, currentUser]);
 
   const formatTimestamp = (timestamp) => new Date(timestamp).toLocaleString();
 
@@ -45,97 +79,236 @@ const Feeds = () => {
 
   const renderImages = (images) => {
     if (!images || images.length === 0) return null;
+    const openLightbox = (index) => setLightbox({ open: true, images, index });
 
-    if (images.length === 1) {
-      return <img src={images[0]} alt="post" className="w-full h-80 object-cover rounded-lg" />;
-    }
-
-    if (images.length === 2) {
+    if (images.length === 1)
       return (
-        <div className="grid grid-cols-2 gap-2">
+        <img
+          src={images[0]}
+          alt="post"
+          className="w-full h-80 object-cover rounded-lg cursor-pointer mt-2"
+          onClick={() => openLightbox(0)}
+        />
+      );
+
+    if (images.length === 2)
+      return (
+        <div className="grid grid-cols-2 gap-2 mt-2">
           {images.map((img, i) => (
-            <img key={i} src={img} alt="post" className="w-full h-48 object-cover rounded-lg" />
+            <img
+              key={i}
+              src={img}
+              alt="post"
+              className="w-full h-48 object-cover rounded-lg cursor-pointer"
+              onClick={() => openLightbox(i)}
+            />
           ))}
         </div>
       );
-    }
 
-    if (images.length === 3) {
+    if (images.length === 3)
       return (
-        <div className="grid grid-cols-2 grid-rows-2 gap-2">
-          <img src={images[0]} alt="post" className="col-span-2 h-48 w-full object-cover rounded-lg" />
-          <img src={images[1]} alt="post" className="h-48 w-full object-cover rounded-lg" />
-          <img src={images[2]} alt="post" className="h-48 w-full object-cover rounded-lg" />
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2">
+          <img
+            src={images[0]}
+            alt="post"
+            className="col-span-2 h-48 w-full object-cover rounded-lg cursor-pointer"
+            onClick={() => openLightbox(0)}
+          />
+          <img
+            src={images[1]}
+            alt="post"
+            className="h-48 w-full object-cover rounded-lg cursor-pointer"
+            onClick={() => openLightbox(1)}
+          />
+          <img
+            src={images[2]}
+            alt="post"
+            className="h-48 w-full object-cover rounded-lg cursor-pointer"
+            onClick={() => openLightbox(2)}
+          />
         </div>
       );
+
+    const firstFour = images.slice(0, 4);
+    return (
+      <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2">
+        {firstFour.map((img, i) => (
+          <div key={i} className="relative">
+            <img
+              src={img}
+              alt="post"
+              className="h-48 w-full object-cover rounded-lg cursor-pointer"
+              onClick={() => openLightbox(i)}
+            />
+            {i === 3 && images.length > 4 && (
+              <div
+                className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-xl font-bold rounded-lg cursor-pointer"
+                onClick={() => openLightbox(3)}
+              >
+                +{images.length - 4}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const toggleLike = (index) => {
+    if (!currentUser) return;
+    const post = posts[index];
+    const liked = !userInteractions[index]?.liked;
+    const postRef = ref(db, `accounts/${post.uid}/posts/${post.postId}`);
+    const updates = {};
+
+    if (liked) {
+      updates[`likedBy/${currentUser.uid}`] = {
+        username: currentUser.displayName || currentUser.email,
+        email: currentUser.email,
+        avatar: currentUser.photoURL || userdp,
+      };
+      updates[`likeCount`] = post.likeCount + 1;
+    } else {
+      updates[`likedBy/${currentUser.uid}`] = null;
+      updates[`likeCount`] = post.likeCount - 1;
     }
 
-    if (images.length >= 4) {
-      const firstFour = images.slice(0, 4);
-      return (
-        <div className="grid grid-cols-2 grid-rows-2 gap-2">
-          {firstFour.map((img, i) => (
-            <div key={i} className="relative">
-              <img src={img} alt="post" className="h-48 w-full object-cover rounded-lg" />
-              {i === 3 && images.length > 4 && (
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-xl font-bold rounded-lg">
-                  +{images.length - 4}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
+    update(postRef, updates);
+  };
+
+  const toggleRepost = (index) => {
+    if (!currentUser) return;
+    const post = posts[index];
+    const reposted = !userInteractions[index]?.reposted;
+    const postRef = ref(db, `accounts/${post.uid}/posts/${post.postId}`);
+    const updates = {};
+
+    if (reposted) {
+      updates[`repostedBy/${currentUser.uid}`] = {
+        username: currentUser.displayName || currentUser.email,
+        email: currentUser.email,
+        avatar: currentUser.photoURL || userdp,
+      };
+      updates[`repostCount`] = post.repostCount + 1;
+    } else {
+      updates[`repostedBy/${currentUser.uid}`] = null;
+      updates[`repostCount`] = post.repostCount - 1;
     }
+
+    update(postRef, updates);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"} min-h-screen transition-colors duration-300`}>
       <FeedNavbar />
-      <div className="p-4 space-y-4">
-        {/* Create Post Box */}
-        <div
-          className="flex items-center bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition"
-          onClick={() => setShowPostModal(true)}
-        >
-          <div className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-full text-xl font-bold mr-4">+</div>
-          <span className="text-gray-500">Create a post</span>
+      <div className="p-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+          <div
+            className={`${darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"} flex items-center p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition w-full`}
+            onClick={() => setShowPostModal(true)}
+          >
+            <div className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-full text-xl font-bold mr-4">
+              +
+            </div>
+            <span>Create a post</span>
+          </div>
+
+          <div
+            onClick={() => navigate("/services")}
+            className={`${darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"} flex items-center p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition w-full`}
+          >
+            <div className="flex items-center justify-center w-10 h-10 bg-yellow-400 text-white rounded-full text-xl mr-4">
+              <FaStar className="animate-pulse" />
+            </div>
+            <span>Ask Arregmatica Assistant</span>
+          </div>
         </div>
 
-        {/* Feeds Header */}
-        <h1 className="text-xl font-semibold">Feeds</h1>
+        <h1 className="text-xl font-semibold mb-4">Feeds</h1>
 
-        {/* Posts Grid */}
         {posts.length === 0 ? (
           <p className="text-gray-500">No posts yet. Be the first to post!</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
             {posts.map((post, index) => (
-              <div key={index} className="bg-white rounded-xl shadow p-4 space-y-4">
-                {/* User info */}
+              <div
+                key={index}
+                className={`${darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"} rounded-xl shadow p-4 space-y-4 transition-all duration-300 relative`}
+              >
+                <div className="absolute top-2 right-2 flex -space-x-2">
+                  {Object.values(post.repostedBy || {}).slice(0, 5).map((user, i) => (
+                    <div key={i} className="relative group">
+                      <img
+                        src={user.avatar || userdp}
+                        alt={user.username}
+                        className="w-8 h-8 rounded-full border-2 border-white cursor-pointer"
+                      />
+                      <span className="absolute bottom-full right-1/2 translate-x-1/2 mb-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                        {user.username}
+                      </span>
+                    </div>
+                  ))}
+                  {Object.keys(post.repostedBy || {}).length > 5 && (
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold border-2 border-white">
+                      +{Object.keys(post.repostedBy).length - 5}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center gap-3">
-                  <img src={post.avatar || userdp} 
-                  alt={post.username} 
-                  className="w-12 h-12 rounded-full object-cover" />
+                  <img
+                    src={post.avatar || userdp}
+                    alt={post.username}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
                   <div>
-                    <p className="font-semibold text-gray-900">{post.username}</p>
-                    <p className="text-xs text-gray-500">{formatTimestamp(post.timestamp)}</p>
+                    <p className="font-semibold">{post.username}</p>
+                    <p className="text-xs text-gray-400">{formatTimestamp(post.timestamp)}</p>
                   </div>
                 </div>
 
-                {/* Post content */}
-                <div className="text-gray-800 text-sm leading-relaxed">{renderContent(post.content)}</div>
-
-                {/* Post images */}
+                <div>{renderContent(post.content)}</div>
                 {renderImages(post.imageURLs)}
+
+                <div className="flex items-center gap-4 mt-2">
+                  <button onClick={() => toggleLike(index)} className="flex items-center gap-1">
+                    {userInteractions[index]?.liked ? (
+                      <FaHeart className="text-red-500 text-xl" />
+                    ) : (
+                      <FaRegHeart className="text-gray-500 text-xl" />
+                    )}
+                    <span className="text-sm">{post.likeCount}</span>
+                  </button>
+
+                  <button onClick={() => setSelectedPost(post)} className="flex items-center gap-1">
+                    <FaComment className="text-gray-500 text-xl" />
+                    <span className="text-sm">{Object.keys(post.comments || {}).length}</span>
+                  </button>
+
+                  <button onClick={() => toggleRepost(index)} className="flex items-center gap-1">
+                    <FaRetweet className={`${userInteractions[index]?.reposted ? "text-orange-500" : "text-gray-500"} text-xl`} />
+                    <span className="text-sm">{post.repostCount}</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Post Modal */}
       {showPostModal && <PostModal onClose={() => setShowPostModal(false)} />}
+      {lightbox.open && (
+        <ImageLightbox
+          images={lightbox.images}
+          initialIndex={lightbox.index}
+          onClose={() => setLightbox({ ...lightbox, open: false })}
+        />
+      )}
+
+      {selectedPost && (
+        <Comments post={selectedPost} currentUser={currentUser} onClose={() => setSelectedPost(null)} />
+      )}
     </div>
   );
 };

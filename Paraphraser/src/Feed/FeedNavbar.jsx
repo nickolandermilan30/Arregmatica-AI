@@ -1,9 +1,20 @@
+// src/components/FeedNavbar.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { BookOpen, Search, FileText, Bell } from "lucide-react";
-import { getDatabase, ref, onValue } from "firebase/database";
-import { auth } from "../firebase"; 
+import {
+  Search,
+  FileText,
+  Bell,
+  Trash2,
+  MessageCircle,
+  Repeat2,
+  ThumbsUp,
+} from "lucide-react";
+import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { auth } from "../firebase";
 import userdp from "../assets/userdp.png";
 import FriendDetail from "./Modal/FriendDetail";
+import NotifPost from "./Modal/NotifPost";
+import { useDarkMode } from "../Theme/DarkModeContext";
 
 const FeedNavbar = () => {
   const [query, setQuery] = useState("");
@@ -12,165 +23,431 @@ const FeedNavbar = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // dropdown states
   const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [openNotifDropdown, setOpenNotifDropdown] = useState(false);
+  const [openSearchDropdown, setOpenSearchDropdown] = useState(false);
 
-  const dropdownRef = useRef(null);
+  const [myPosts, setMyPosts] = useState([]);
+  const [deletePostId, setDeletePostId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [notifications, setNotifications] = useState([]);
+  const [selectedNotif, setSelectedNotif] = useState(null);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+
+  const navbarRef = useRef(null);
   const currentUser = auth.currentUser;
+  const db = getDatabase();
+  const { darkMode } = useDarkMode();
 
+  // Fetch accounts
   useEffect(() => {
-    const db = getDatabase();
     const accountsRef = ref(db, "accounts");
-
     const unsubscribe = onValue(accountsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        const accountsArray = Object.keys(data).map((uid) => ({
-          uid,
-          ...data[uid],
-        }));
-        setAccounts(accountsArray);
+        setAccounts(Object.keys(data).map((uid) => ({ uid, ...data[uid] })));
       } else {
         setAccounts([]);
       }
     });
-
     return () => unsubscribe();
-  }, []);
+  }, [db]);
 
+  // Filter accounts on search
   useEffect(() => {
     if (!query.trim()) {
       setFiltered([]);
+      setOpenSearchDropdown(false);
       return;
     }
-
     const lower = query.toLowerCase();
     const results = accounts.filter((acc) =>
       acc.username?.toLowerCase().includes(lower)
     );
     setFiltered(results);
+    setOpenSearchDropdown(results.length > 0);
   }, [query, accounts]);
 
-  // ✅ close dropdown kapag nag click sa labas
+  // Fetch my posts
+  useEffect(() => {
+    if (!currentUser) return;
+    const myRef = ref(db, `accounts/${currentUser.uid}`);
+    const unsubscribe = onValue(myRef, (snapshot) => {
+      const accountData = snapshot.val();
+      if (accountData?.posts) {
+        const postsArray = Object.entries(accountData.posts).sort(
+          ([, a], [, b]) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setMyPosts(postsArray);
+      } else setMyPosts([]);
+    });
+    return () => unsubscribe();
+  }, [currentUser, db]);
+
+  // Notifications
+  useEffect(() => {
+    if (!currentUser) return;
+    const accountsRef = ref(db, "accounts");
+    const unsubscribe = onValue(accountsRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setNotifications([]);
+        return;
+      }
+      const data = snapshot.val();
+      const newNotifs = [];
+      Object.keys(data).forEach((uid) => {
+        const user = data[uid];
+        if (!user.posts) return;
+
+        Object.entries(user.posts).forEach(([postId, post]) => {
+          const ownerUid = uid;
+
+          // Likes
+          if (post.likedBy) {
+            Object.keys(post.likedBy).forEach((likerId) => {
+              if (post.uid === currentUser.uid && likerId !== currentUser.uid)
+                newNotifs.push({
+                  type: "like",
+                  postId,
+                  ownerUid,
+                  from: data[likerId] || { username: "Someone" },
+                  timestamp: post.timestamp,
+                  content: post.content,
+                });
+            });
+          }
+
+          // Comments
+          if (post.comments) {
+            Object.entries(post.comments).forEach(([cid, comment]) => {
+              if (post.uid === currentUser.uid && comment.uid !== currentUser.uid)
+                newNotifs.push({
+                  type: "comment",
+                  postId,
+                  ownerUid,
+                  from: data[comment.uid] || { username: "Someone" },
+                  timestamp: comment.timestamp,
+                  content: comment.content,
+                });
+            });
+          }
+
+          // Reposts
+          if (post.repostedBy) {
+            Object.keys(post.repostedBy).forEach((reposterId) => {
+              if (post.uid === currentUser.uid && reposterId !== currentUser.uid)
+                newNotifs.push({
+                  type: "repost",
+                  postId,
+                  ownerUid,
+                  from: data[reposterId] || { username: "Someone" },
+                  timestamp: post.timestamp,
+                  content: post.content,
+                });
+            });
+          }
+
+          // Mentions
+          if (post.content && currentUser.displayName) {
+            if (post.content.includes(`@${currentUser.displayName}`) && post.uid !== currentUser.uid)
+              newNotifs.push({
+                type: "mention",
+                postId,
+                ownerUid,
+                from: user,
+                timestamp: post.timestamp,
+                content: post.content,
+              });
+          }
+        });
+      });
+
+      newNotifs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setNotifications(newNotifs);
+    });
+    return () => unsubscribe();
+  }, [db, currentUser]);
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (navbarRef.current && !navbarRef.current.contains(e.target)) {
         setOpenProfileDropdown(false);
         setOpenNotifDropdown(false);
+        setOpenSearchDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const formatTimestamp = (timestamp) => new Date(timestamp).toLocaleString();
+
+  const handleDeletePost = async () => {
+    if (!deletePostId || !currentUser) return;
+    try {
+      await remove(ref(db, `accounts/${currentUser.uid}/posts/${deletePostId}`));
+      setShowDeleteModal(false);
+      setDeletePostId(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <nav className="flex items-center justify-between px-4 py-3 shadow-md bg-white relative">
-      {/* Left - Story Icon */}
+    <nav
+      ref={navbarRef}
+      className={`flex items-center justify-between px-4 py-3 shadow-md relative transition-colors duration-300 ${
+        darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
+      }`}
+    >
+      {/* Left */}
       <div className="flex items-center space-x-2">
-        <BookOpen size={28} className="text-blue-500" />
-        <span className="font-bold text-lg text-gray-800">Stories</span>
+        <span className="font-bold text-lg">Community</span>
       </div>
 
-      {/* Right - Search + Notif + Profile */}
-      <div className="flex items-center gap-4 relative" ref={dropdownRef}>
-        {/* Search Bar */}
-        <div className="relative w-64 sm:w-80">
-          <div className="flex items-center bg-gray-100 rounded-full px-4 py-2 border border-gray-200">
-            <Search size={20} className="text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search learners"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent focus:outline-none text-gray-700 placeholder-gray-500"
-            />
+      {/* Right */}
+      <div className="flex items-center gap-4 relative">
+ {/* Search */}
+<div className="relative w-48 sm:w-64 md:w-80">
+  <div
+    className={`flex items-center rounded-full px-3 py-2 border transition-colors duration-300 ${
+      darkMode
+        ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
+        : "bg-gray-100 border-gray-200 text-gray-700 placeholder-gray-500"
+    }`}
+  >
+    <Search size={18} className="mr-2" />
+    <input
+      type="text"
+      placeholder="Search learners"
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      className="flex-1 bg-transparent focus:outline-none text-sm sm:text-base"
+    />
+  </div>
+
+  {/* Dropdown */}
+  {openSearchDropdown && (
+    <div
+      className={`absolute left-0 mt-2 w-full rounded-lg shadow-lg max-h-60 overflow-y-auto z-[9999] transition-colors duration-300 ${
+        darkMode
+          ? "bg-gray-800 border border-gray-700 text-gray-100"
+          : "bg-white border border-gray-200 text-gray-800"
+      }`}
+    >
+      {filtered.map((acc) => (
+        <div
+          key={acc.uid}
+          className={`flex items-center gap-3 p-2 sm:p-3 cursor-pointer transition-colors duration-200 ${
+            darkMode
+              ? "hover:bg-gray-700/60"
+              : "hover:bg-gray-100"
+          }`}
+          onClick={() => {
+            setSelectedUser(acc);
+            setShowModal(true);
+            setOpenSearchDropdown(false);
+          }}
+        >
+          <img
+            src={acc.avatar || userdp}
+            alt={acc.username}
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border"
+          />
+          <div>
+            <p className="font-medium text-sm sm:text-base">{acc.username}</p>
+            <p className="text-xs break-all">{acc.uid}</p>
           </div>
-
-          {/* Dropdown Results */}
-          {filtered.length > 0 && (
-            <div className="absolute mt-4 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
-              {filtered.map((acc) => (
-                <div
-                  key={acc.uid}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setSelectedUser(acc);
-                    setShowModal(true);
-                  }}
-                >
-                  <img
-                    src={acc.avatar || userdp}
-                    alt={acc.username}
-                    className="w-10 h-10 rounded-full object-cover border"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-800">{acc.username}</p>
-                    <p className="text-xs text-gray-500 break-all">{acc.uid}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+      ))}
+    </div>
+  )}
+</div>
 
-        {/* 🔔 Notification Icon */}
-        <div className="relative">
-          <button
+
+{/* Notifications */}
+<div className="relative ">
+  <button
+    onClick={() => {
+      setOpenNotifDropdown((prev) => !prev);
+      setOpenProfileDropdown(false);
+      setOpenSearchDropdown(false);
+    }}
+    className={`relative p-2 rounded-full transition ${
+      darkMode
+        ? "hover:bg-gray-700"
+        : "hover:bg-gray-300"
+    }`}
+  >
+    <Bell size={24} />
+    {notifications.length > 0 && (
+      <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+    )}
+  </button>
+
+  {openNotifDropdown && (
+    <div
+      className={`absolute right-0 mt-5 w-80 max-h-[500px] overflow-y-auto rounded-xl shadow-lg border p-4 z-[9999] transition-colors duration-300 ${
+        darkMode ? "bg-gray-800 text-gray-100 border-gray-700" : "bg-white text-gray-800 border-gray-200"
+      }`}
+    >
+    <h2 className="font-semibold mb-3">Notifications</h2>
+    {notifications.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+        <FileText size={36} className="mb-2" />
+        <p className="text-md font-medium">No notifications yet</p>
+      </div>
+    ) : (
+      <div className="space-y-3">
+        {notifications.map((notif, idx) => (
+          <div
+            key={idx}
+            className={`flex items-start gap-3 p-3 rounded-lg border-b cursor-pointer transition-colors duration-200 ${
+              darkMode
+                ? "hover:bg-gray-700/50" // softer hover in dark mode
+                : "hover:bg-gray-100"   // normal hover in light mode
+            }`}
             onClick={() => {
-              setOpenNotifDropdown((prev) => !prev);
-              setOpenProfileDropdown(false);
+              setSelectedNotif(notif);
+              setShowNotifModal(true);
+              setOpenNotifDropdown(false);
             }}
-            className="relative p-2 rounded-full hover:bg-gray-100 transition"
           >
-            <Bell size={24} className="text-gray-700" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
-
-          {openNotifDropdown && (
-            <div className="absolute right-0 mt-5 w-72 bg-white rounded-xl shadow-lg border p-4 z-50">
-              <div className="flex flex-col items-center justify-center text-gray-500 py-6">
-                <FileText size={36} className="mb-2 text-gray-400" />
-                <p className="text-md font-medium">No notifications yet</p>
-              </div>
+            <img
+              src={notif.from?.avatar || userdp}
+              alt="user"
+              className="w-10 h-10 rounded-full object-cover border"
+            />
+            <div className="flex-1">
+              <p className="text-sm">
+                <span className="font-semibold">{notif.from?.username || "Someone"}</span>{" "}
+                {notif.type === "like" && "liked your post"}
+                {notif.type === "comment" && "commented:"}
+                {notif.type === "repost" && "reposted your post"}
+                {notif.type === "mention" && "mentioned you"}
+              </p>
+              {notif.type === "comment" && (
+                <p className="text-xs mt-1 line-clamp-2">{notif.content}</p>
+              )}
+              <p className="text-xs mt-1">{formatTimestamp(notif.timestamp)}</p>
             </div>
-          )}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
         </div>
 
-        {/* ✅ Profile Picture of Logged-in User */}
-        {currentUser && (
-          <div className="relative">
-            <img
-              src={currentUser.photoURL || userdp}
-              alt="My Profile"
-              className="w-11 h-11 rounded-full border object-cover cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
-              onClick={() => {
-                setOpenProfileDropdown((prev) => !prev);
-                setOpenNotifDropdown(false);
-              }}
-            />
-
-            {openProfileDropdown && (
-              <div className="absolute right-0 mt-5 w-64 bg-white rounded-xl shadow-lg border p-4 z-50">
-                <div className="flex flex-col items-center justify-center text-gray-500 py-6">
-                  <FileText size={40} className="mb-2 text-gray-400" />
-                  <p className="text-lg font-medium">No posts yet</p>
-                </div>
+      {/* Profile */}
+{currentUser && (
+  <div className="relative">
+    <img
+      src={currentUser.photoURL || userdp}
+      alt="My Profile"
+      className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border object-cover cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
+      onClick={() => {
+        setOpenProfileDropdown((prev) => !prev);
+        setOpenNotifDropdown(false);
+        setOpenSearchDropdown(false);
+      }}
+    />
+    {openProfileDropdown && (
+      <div
+        className={`absolute right-0 mt-5 w-72 sm:w-80 max-h-[400px] overflow-y-auto rounded-xl shadow-lg border p-4 z-[9999] transition-colors duration-300 ${
+          darkMode ? "bg-gray-800 text-gray-100 border-gray-700" : "bg-white text-gray-800 border-gray-200"
+        }`}
+      >
+                <h2 className="font-semibold mb-3">My Posts</h2>
+                {myPosts.length === 0 ? (
+                  <p className="text-sm text-gray-500">You have no posts yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {myPosts.map(([postId, post], idx) => (
+                      <div key={idx} className="border rounded-lg overflow-hidden relative">
+                        {post.imageURLs?.[0] && (
+                          <img
+                            src={post.imageURLs[0]}
+                            alt="post"
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        <div className="p-2">
+                          <p className="text-sm line-clamp-2">{post.content}</p>
+                          <p className="text-xs mt-1">{formatTimestamp(post.timestamp)}</p>
+                        </div>
+                        <button
+                          className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600"
+                          onClick={() => {
+                            setDeletePostId(postId);
+                            setShowDeleteModal(true);
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* ✅ FriendDetail Modal */}
-      {showModal && selectedUser && (
-        <FriendDetail
-          user={selectedUser}
-          onClose={() => setShowModal(false)}
+      {/* Modals */}
+      {showModal && selectedUser && <FriendDetail user={selectedUser} onClose={() => setShowModal(false)} />}
+      {showNotifModal && selectedNotif && (
+        <NotifPost
+          notif={selectedNotif}
+          onClose={() => {
+            setShowNotifModal(false);
+            setSelectedNotif(null);
+          }}
         />
       )}
+      {showDeleteModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className={`p-6 max-w-sm w-full text-center rounded-xl shadow-lg transition-colors duration-300 ${
+        darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+      }`}
+    >
+      <p className="font-semibold mb-4">
+        Are you sure you want to delete this post?
+      </p>
+      <div className="flex justify-center gap-4">
+        <button
+          className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+            darkMode
+              ? "bg-gray-700 text-gray-100 hover:bg-gray-600"
+              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+          }`}
+          onClick={() => setShowDeleteModal(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+            darkMode
+              ? "bg-red-600 text-white hover:bg-red-700"
+              : "bg-red-500 text-white hover:bg-red-600"
+          }`}
+          onClick={handleDeletePost}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </nav>
   );
 };
 
 export default FeedNavbar;
+
