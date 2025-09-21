@@ -1,3 +1,4 @@
+// src/pages/Feeds.js
 import React, { useState, useEffect } from "react";
 import { getDatabase, ref, onValue, update } from "firebase/database";
 import { getAuth } from "firebase/auth";
@@ -6,13 +7,14 @@ import FeedNavbar from "./FeedNavbar";
 import PostModal from "./Modal/Post";
 import ImageLightbox from "./ImageLightbox";
 import Comments from "./Modal/Comments";
+import GroupChat from "./Modal/GroupChat";
 import userdp from "../assets/userdp.png";
-import { FaHeart, FaRegHeart, FaComment, FaRetweet } from "react-icons/fa";
-import { FaStar } from "react-icons/fa6";
-import { useDarkMode } from "../Theme/DarkModeContext"; // ✅ import context
+import { FaHeart, FaRegHeart, FaComment, FaRetweet, FaStar, FaComments } from "react-icons/fa";
+import { useDarkMode } from "../Theme/DarkModeContext";
 
 const Feeds = () => {
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showGroupChat, setShowGroupChat] = useState(false);
   const [posts, setPosts] = useState([]);
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const [userInteractions, setUserInteractions] = useState({});
@@ -22,7 +24,7 @@ const Feeds = () => {
   const auth = getAuth();
   const currentUser = auth.currentUser;
   const navigate = useNavigate();
-  const { darkMode } = useDarkMode(); // ✅ use dark mode
+  const { darkMode } = useDarkMode();
 
   useEffect(() => {
     if (!currentUser) return;
@@ -72,8 +74,14 @@ const Feeds = () => {
   const renderContent = (text) => {
     if (!text) return null;
     const escaped = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const withMentions = escaped.replace(/(@[a-zA-Z0-9_]+)/g, '<span class="text-blue-500">$1</span>');
-    const withHashtags = withMentions.replace(/(#[a-zA-Z0-9_]+)/g, '<span class="text-red-500">$1</span>');
+    const withMentions = escaped.replace(
+      /(@[a-zA-Z0-9_]+)/g,
+      '<span class="text-sky-500 font-medium">$1</span>'
+    );
+    const withHashtags = withMentions.replace(
+      /(#[a-zA-Z0-9_]+)/g,
+      '<span class="text-pink-500 font-medium">$1</span>'
+    );
     return <span dangerouslySetInnerHTML={{ __html: withHashtags }} />;
   };
 
@@ -86,7 +94,7 @@ const Feeds = () => {
         <img
           src={images[0]}
           alt="post"
-          className="w-full h-80 object-cover rounded-lg cursor-pointer mt-2"
+          className="w-full h-80 object-cover rounded-xl cursor-pointer mt-2 shadow"
           onClick={() => openLightbox(0)}
         />
       );
@@ -99,7 +107,7 @@ const Feeds = () => {
               key={i}
               src={img}
               alt="post"
-              className="w-full h-48 object-cover rounded-lg cursor-pointer"
+              className="w-full h-48 object-cover rounded-xl cursor-pointer shadow"
               onClick={() => openLightbox(i)}
             />
           ))}
@@ -112,19 +120,19 @@ const Feeds = () => {
           <img
             src={images[0]}
             alt="post"
-            className="col-span-2 h-48 w-full object-cover rounded-lg cursor-pointer"
+            className="col-span-2 h-48 w-full object-cover rounded-xl cursor-pointer shadow"
             onClick={() => openLightbox(0)}
           />
           <img
             src={images[1]}
             alt="post"
-            className="h-48 w-full object-cover rounded-lg cursor-pointer"
+            className="h-48 w-full object-cover rounded-xl cursor-pointer shadow"
             onClick={() => openLightbox(1)}
           />
           <img
             src={images[2]}
             alt="post"
-            className="h-48 w-full object-cover rounded-lg cursor-pointer"
+            className="h-48 w-full object-cover rounded-xl cursor-pointer shadow"
             onClick={() => openLightbox(2)}
           />
         </div>
@@ -138,12 +146,12 @@ const Feeds = () => {
             <img
               src={img}
               alt="post"
-              className="h-48 w-full object-cover rounded-lg cursor-pointer"
+              className="h-48 w-full object-cover rounded-xl cursor-pointer shadow"
               onClick={() => openLightbox(i)}
             />
             {i === 3 && images.length > 4 && (
               <div
-                className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-xl font-bold rounded-lg cursor-pointer"
+                className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-2xl font-bold rounded-xl cursor-pointer"
                 onClick={() => openLightbox(3)}
               >
                 +{images.length - 4}
@@ -200,43 +208,71 @@ const Feeds = () => {
   };
 
   return (
-    <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"} min-h-screen transition-colors duration-300`}>
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100"
+          : "bg-gradient-to-br from-sky-50 to-sky-100 text-gray-900"
+      }`}
+    >
       <FeedNavbar />
-      <div className="p-4">
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Create post + Join group chat + Ask Assistant */}
+        <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
           <div
-            className={`${darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"} flex items-center p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition w-full`}
+            className={`flex items-center p-5 rounded-2xl shadow-lg cursor-pointer hover:shadow-xl transition w-full ${
+              darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+            }`}
             onClick={() => setShowPostModal(true)}
           >
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-full text-xl font-bold mr-4">
+            <div className="flex items-center justify-center w-12 h-12 bg-sky-500 text-white rounded-full text-2xl font-bold mr-4">
               +
             </div>
-            <span>Create a post</span>
+            <span className="font-semibold">Create a Post</span>
+          </div>
+
+          <div
+            className={`flex items-center p-5 rounded-2xl shadow-lg cursor-pointer hover:shadow-xl transition w-full ${
+              darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+            }`}
+            onClick={() => setShowGroupChat(true)}
+          >
+            <div className="flex items-center justify-center w-12 h-12 bg-green-500 text-white rounded-full text-xl mr-4 animate-bounce">
+              <FaComments />
+            </div>
+            <span className="font-semibold">Join our Group Chat</span>
           </div>
 
           <div
             onClick={() => navigate("/services")}
-            className={`${darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"} flex items-center p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition w-full`}
+            className={`flex items-center p-5 rounded-2xl shadow-lg cursor-pointer hover:shadow-xl transition w-full ${
+              darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+            }`}
           >
-            <div className="flex items-center justify-center w-10 h-10 bg-yellow-400 text-white rounded-full text-xl mr-4">
+            <div className="flex items-center justify-center w-12 h-12 bg-yellow-400 text-white rounded-full text-xl mr-4">
               <FaStar className="animate-pulse" />
             </div>
-            <span>Ask Arregmatica Assistant</span>
+            <span className="font-semibold">Ask Arregmatica Assistant</span>
           </div>
         </div>
 
-        <h1 className="text-xl font-semibold mb-4">Feeds</h1>
+        <h1 className="text-3xl font-extrabold text-sky-500 mb-8 tracking-wide">
+          Feeds
+        </h1>
 
         {posts.length === 0 ? (
-          <p className="text-gray-500">No posts yet. Be the first to post!</p>
+          <p className="text-gray-500 text-center">No posts yet. Be the first to post!</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post, index) => (
               <div
                 key={index}
-                className={`${darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"} rounded-xl shadow p-4 space-y-4 transition-all duration-300 relative`}
+                className={`rounded-2xl shadow-xl p-6 space-y-4 transition-all duration-300 relative ${
+                  darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
+                }`}
               >
-                <div className="absolute top-2 right-2 flex -space-x-2">
+                {/* Repost avatars */}
+                <div className="absolute top-3 right-3 flex -space-x-2">
                   {Object.values(post.repostedBy || {}).slice(0, 5).map((user, i) => (
                     <div key={i} className="relative group">
                       <img
@@ -256,23 +292,29 @@ const Feeds = () => {
                   )}
                 </div>
 
+                {/* User info */}
                 <div className="flex items-center gap-3">
                   <img
                     src={post.avatar || userdp}
                     alt={post.username}
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-sky-500 shadow"
                   />
                   <div>
                     <p className="font-semibold">{post.username}</p>
-                    <p className="text-xs text-gray-400">{formatTimestamp(post.timestamp)}</p>
+                    <p className="text-xs opacity-60">{formatTimestamp(post.timestamp)}</p>
                   </div>
                 </div>
 
-                <div>{renderContent(post.content)}</div>
+                {/* Post content */}
+                <div className="text-base leading-relaxed">{renderContent(post.content)}</div>
                 {renderImages(post.imageURLs)}
 
-                <div className="flex items-center gap-4 mt-2">
-                  <button onClick={() => toggleLike(index)} className="flex items-center gap-1">
+                {/* Actions */}
+                <div className="flex items-center gap-6 mt-4">
+                  <button
+                    onClick={() => toggleLike(index)}
+                    className="flex items-center gap-2 hover:scale-105 transition"
+                  >
                     {userInteractions[index]?.liked ? (
                       <FaHeart className="text-red-500 text-xl" />
                     ) : (
@@ -281,13 +323,25 @@ const Feeds = () => {
                     <span className="text-sm">{post.likeCount}</span>
                   </button>
 
-                  <button onClick={() => setSelectedPost(post)} className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSelectedPost(post)}
+                    className="flex items-center gap-2 hover:scale-105 transition"
+                  >
                     <FaComment className="text-gray-500 text-xl" />
                     <span className="text-sm">{Object.keys(post.comments || {}).length}</span>
                   </button>
 
-                  <button onClick={() => toggleRepost(index)} className="flex items-center gap-1">
-                    <FaRetweet className={`${userInteractions[index]?.reposted ? "text-orange-500" : "text-gray-500"} text-xl`} />
+                  <button
+                    onClick={() => toggleRepost(index)}
+                    className="flex items-center gap-2 hover:scale-105 transition"
+                  >
+                    <FaRetweet
+                      className={`text-xl ${
+                        userInteractions[index]?.reposted
+                          ? "text-orange-500"
+                          : "text-gray-500"
+                      }`}
+                    />
                     <span className="text-sm">{post.repostCount}</span>
                   </button>
                 </div>
@@ -298,6 +352,7 @@ const Feeds = () => {
       </div>
 
       {showPostModal && <PostModal onClose={() => setShowPostModal(false)} />}
+      {showGroupChat && <GroupChat onClose={() => setShowGroupChat(false)} />}
       {lightbox.open && (
         <ImageLightbox
           images={lightbox.images}
@@ -305,7 +360,6 @@ const Feeds = () => {
           onClose={() => setLightbox({ ...lightbox, open: false })}
         />
       )}
-
       {selectedPost && (
         <Comments post={selectedPost} currentUser={currentUser} onClose={() => setSelectedPost(null)} />
       )}

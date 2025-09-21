@@ -1,6 +1,6 @@
 // src/components/FeedNavbar.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Bell, Trash2, FileText } from "lucide-react";
+import { Search, Bell, Trash2, FileText, Menu, X } from "lucide-react";
 import { getDatabase, ref, onValue, remove } from "firebase/database";
 import { auth } from "../firebase";
 import userdp from "../assets/userdp.png";
@@ -27,6 +27,8 @@ const FeedNavbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [selectedNotif, setSelectedNotif] = useState(null);
   const [showNotifModal, setShowNotifModal] = useState(false);
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navbarRef = useRef(null);
   const currentUser = auth.currentUser;
@@ -194,13 +196,16 @@ const FeedNavbar = () => {
         darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
       }`}
     >
-  
-<div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate("/community")}>
-  <p className="italic font-semibold text-lg">Community</p>
-</div>
+      {/* Left - Logo / Title */}
+      <div
+        className="flex items-center space-x-3 cursor-pointer"
+        onClick={() => navigate("/community")}
+      >
+        <p className="italic font-semibold text-lg">Community</p>
+      </div>
 
-      {/* Right: Search, Notifications, Profile */}
-      <div className="flex items-center gap-4 relative">
+      {/* Desktop Right Side */}
+      <div className="hidden md:flex items-center gap-4 relative">
         {/* Search */}
         <div className="relative w-48 sm:w-64 md:w-80">
           <div
@@ -348,44 +353,43 @@ const FeedNavbar = () => {
                   darkMode ? "bg-gray-800 text-gray-100 border-gray-700" : "bg-white text-gray-800 border-gray-200"
                 }`}
               >
-            {/* User Info */}
-<div className="flex items-center justify-between mb-4 border-b pb-3">
-  <div className="flex items-center gap-3">
-    <img
-      src={currentUser.photoURL || userdp}
-      alt="Profile"
-      className="w-12 h-12 rounded-full border object-cover"
-    />
-    <div className="flex flex-col">
-      <p className="font-semibold">{currentUser.displayName || "No Name"}</p>
-      <p className="text-xs opacity-70 break-all">{currentUser.uid}</p>
-    </div>
-  </div>
-  <button
-    onClick={() => navigate("/profile")}
-    className={`p-2 rounded-lg transition-colors duration-300 ${
-      darkMode
-        ? "bg-gray-700 hover:bg-gray-600 text-gray-100"
-        : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-    }`}
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-5 w-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M5.121 17.804A7.5 7.5 0 1112 19.5a7.5 7.5 0 01-6.879-1.696zM15 11a3 3 0 11-6 0 3 3 0 016 0z"
-      />
-    </svg>
-  </button>
-</div>
-
+                {/* User Info */}
+                <div className="flex items-center justify-between mb-4 border-b pb-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={currentUser.photoURL || userdp}
+                      alt="Profile"
+                      className="w-12 h-12 rounded-full border object-cover"
+                    />
+                    <div className="flex flex-col">
+                      <p className="font-semibold">{currentUser.displayName || "No Name"}</p>
+                      <p className="text-xs opacity-70 break-all">{currentUser.uid}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className={`p-2 rounded-lg transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-gray-700 hover:bg-gray-600 text-gray-100"
+                        : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                    }`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5.121 17.804A7.5 7.5 0 1112 19.5a7.5 7.5 0 01-6.879-1.696zM15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </button>
+                </div>
 
                 {/* Posts */}
                 <h3 className="font-semibold mb-2">My Posts</h3>
@@ -424,6 +428,155 @@ const FeedNavbar = () => {
           </div>
         )}
       </div>
+
+      {/* Mobile Menu Button */}
+      <button
+        className="md:hidden p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      >
+        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Mobile Menu Drawer */}
+      {mobileMenuOpen && (
+        <div
+          className={`absolute top-full left-0 w-full flex flex-col gap-4 p-4 shadow-lg z-50 md:hidden transition-colors duration-300 ${
+            darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-800"
+          }`}
+        >
+          {/* Search (Mobile) */}
+          <div className="relative w-full">
+            <div
+              className={`flex items-center rounded-full px-3 py-2 border transition-colors duration-300 ${
+                darkMode
+                  ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
+                  : "bg-gray-100 border-gray-200 text-gray-700 placeholder-gray-500"
+              }`}
+            >
+              <Search size={18} className="mr-2" />
+              <input
+                type="text"
+                placeholder="Search learners"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="flex-1 bg-transparent focus:outline-none text-sm"
+              />
+            </div>
+            {openSearchDropdown && (
+              <div
+                className={`absolute left-0 mt-2 w-full rounded-lg shadow-lg max-h-60 overflow-y-auto z-[9999] ${
+                  darkMode
+                    ? "bg-gray-800 border border-gray-700 text-gray-100"
+                    : "bg-white border border-gray-200 text-gray-800"
+                }`}
+              >
+                {filtered.map((acc) => (
+                  <div
+                    key={acc.uid}
+                    className={`flex items-center gap-3 p-2 cursor-pointer transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                    onClick={() => {
+                      setSelectedUser(acc);
+                      setShowModal(true);
+                      setOpenSearchDropdown(false);
+                    }}
+                  >
+                    <img
+                      src={acc.avatar || userdp}
+                      alt={acc.username}
+                      className="w-8 h-8 rounded-full object-cover border"
+                    />
+                    <div>
+                      <p className="font-medium text-sm">{acc.username}</p>
+                      <p className="text-xs break-all">{acc.uid}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Notifications (Mobile) */}
+          <button
+            onClick={() => {
+              setOpenNotifDropdown((prev) => !prev);
+              setOpenProfileDropdown(false);
+            }}
+            className={`flex items-center gap-2 p-2 rounded-lg ${
+              darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
+            }`}
+          >
+            <Bell size={20} />
+            <span>Notifications</span>
+          </button>
+          {openNotifDropdown && (
+            <div
+              className={`mt-2 rounded-lg shadow-lg border max-h-[300px] overflow-y-auto p-4 ${
+                darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+              }`}
+            >
+              {notifications.length === 0 ? (
+                <p className="text-sm text-gray-500">No notifications yet</p>
+              ) : (
+                notifications.map((notif, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer ${
+                      darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-100"
+                    }`}
+                    onClick={() => {
+                      setSelectedNotif(notif);
+                      setShowNotifModal(true);
+                      setOpenNotifDropdown(false);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <img
+                      src={notif.from?.avatar || userdp}
+                      alt="user"
+                      className="w-8 h-8 rounded-full object-cover border"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm">
+                        <span className="font-semibold">{notif.from?.username || "Someone"}</span>{" "}
+                        {notif.type === "like"
+                          ? "liked your post"
+                          : notif.type === "comment"
+                          ? "commented"
+                          : notif.type === "repost"
+                          ? "reposted your post"
+                          : "mentioned you"}
+                      </p>
+                      <p className="text-xs">{formatTimestamp(notif.timestamp)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Profile (Mobile) */}
+          {currentUser && (
+            <button
+              onClick={() => {
+                navigate("/profile");
+                setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2 rounded-lg ${
+                darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
+              }`}
+            >
+              <img
+                src={currentUser.photoURL || userdp}
+                alt="profile"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+              <span className="text-sm">{currentUser.displayName || "My Profile"}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       {showModal && selectedUser && <FriendDetail user={selectedUser} onClose={() => setShowModal(false)} />}

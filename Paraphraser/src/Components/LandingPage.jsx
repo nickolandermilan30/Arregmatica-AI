@@ -56,36 +56,47 @@ const LandingPage = () => {
 
   return (
     <div className={`${darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"} w-full`}>
-      {/* HERO SECTION */}
-      <section
-        className="relative w-full h-screen bg-cover bg-center flex items-center justify-center text-center"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1529070538774-1843cb3265df')`,
-        }}
-      >
-        {/* Overlay */}
-        <div
-          className={`absolute inset-0 ${
-            darkMode ? "bg-black/70" : "bg-black/50"
-          }`}
-        ></div>
+   {/* HERO SECTION */}
+<section
+  className="relative w-full h-screen bg-cover bg-center flex items-center justify-center text-center"
+  style={{
+    backgroundImage: `url('https://images.unsplash.com/photo-1529070538774-1843cb3265df')`,
+  }}
+>
+  {/* Overlay */}
+  <div
+    className={`absolute inset-0 ${
+      darkMode ? "bg-black/70" : "bg-black/50"
+    }`}
+  ></div>
 
-        <div className="relative z-10 max-w-2xl px-6 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-            Master English with <span className="text-sky-400">Clarity</span> & Confidence
-          </h1>
-          <p className="text-lg mb-6 text-gray-200">
-            Improve your grammar, vocabulary, and writing skills with the help
-            of AI-powered tools and personalized study insights.
-          </p>
-          <button
-            onClick={() => navigate("/home")}
-            className="px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-lg transition"
-          >
-            Get Started
-          </button>
-        </div>
-      </section>
+  <div className="relative z-10 max-w-2xl px-6 text-center">
+    <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
+      Master English with <span className="text-sky-400">Clarity</span> & Confidence
+    </h1>
+    <p className="text-lg mb-6 text-gray-200">
+      Improve your grammar, vocabulary, and writing skills with the help
+      of AI-powered tools and personalized study insights.
+    </p>
+
+    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <button
+        onClick={() => navigate("/home")}
+        className="px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-lg transition"
+      >
+        Get Started
+      </button>
+
+      <button
+        onClick={() => navigate("/feed")}
+        className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg shadow-lg transition"
+      >
+        Community
+      </button>
+    </div>
+  </div>
+</section>
+
 
       {/* SERVICES SECTION */}
       <section className={`py-20 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>

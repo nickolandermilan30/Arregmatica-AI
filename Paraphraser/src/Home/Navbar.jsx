@@ -12,7 +12,6 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false); // user dropdown
   const [dictDropdown, setDictDropdown] = useState(false); // tools dropdown (desktop)
-  const [mobileDictDropdown, setMobileDictDropdown] = useState(false); // tools dropdown (mobile)
   const { darkMode } = useDarkMode();
   const navigate = useNavigate();
   const navbarRef = useRef(null);
@@ -36,13 +35,12 @@ const Navbar = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outside (desktop)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target)) {
         setDropdownOpen(false);
         setDictDropdown(false);
-        setMobileDictDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -93,7 +91,7 @@ const Navbar = () => {
               Arregmatica AI
             </Link>
 
-            {/* Tools Dropdown */}
+            {/* Tools Dropdown (Desktop only) */}
             <div className="relative">
               <button
                 onClick={() => setDictDropdown(!dictDropdown)}
@@ -273,49 +271,22 @@ const Navbar = () => {
               <Link to="/services" onClick={() => setIsOpen(false)}>
                 Arregmatica AI
               </Link>
-
-              {/* Tools Mobile Dropdown */}
-              <div>
-                <button
-                  onClick={() => setMobileDictDropdown(!mobileDictDropdown)}
-                  className={`flex items-center justify-between w-full px-2 py-2 rounded-lg transition-colors duration-200 ${
-                    darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
-                  }`}
-                >
-                  <span>Tools</span>
-                  <ChevronDown
-                    size={18}
-                    className={`transition-transform ${
-                      mobileDictDropdown ? "rotate-180" : "rotate-0"
-                    }`}
-                  />
-                </button>
-                {mobileDictDropdown && (
-                  <div className="ml-4 mt-2 flex flex-col space-y-2">
-                    {["home","dictionary","humanize","essa-checker","history"].map((path,key)=>(
-                      <Link
-                        key={key}
-                        to={`/${path}`}
-                        onClick={() => setIsOpen(false)}
-                        className={`px-2 py-1 rounded transition-colors duration-200 ${
-                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {path === "home"
-                          ? "Text Enhancer"
-                          : path === "dictionary"
-                          ? "Dictionary"
-                          : path === "humanize"
-                          ? "Humanize Word"
-                          : path === "essa-checker"
-                          ? "Essay Checker"
-                          : "History"}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+              {/* Tools as flat list on mobile */}
+              <Link to="/home" onClick={() => setIsOpen(false)}>
+                Text Enhancer
+              </Link>
+              <Link to="/dictionary" onClick={() => setIsOpen(false)}>
+                Dictionary
+              </Link>
+              <Link to="/humanize" onClick={() => setIsOpen(false)}>
+                Humanize Word
+              </Link>
+              <Link to="/essa-checker" onClick={() => setIsOpen(false)}>
+                Essay Checker
+              </Link>
+              <Link to="/history" onClick={() => setIsOpen(false)}>
+                History
+              </Link>
               <Link to="/about" onClick={() => setIsOpen(false)}>
                 About
               </Link>
@@ -327,15 +298,10 @@ const Navbar = () => {
                 Take Quiz
               </Link>
 
-              {/* Mobile User Dropdown */}
+              {/* User Links flat on mobile */}
               {user && (
                 <div className="mt-6 border-t pt-4">
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg transition-colors duration-200 ${
-                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
-                    }`}
-                  >
+                  <div className="flex items-center gap-2 mb-4">
                     <div className="relative w-8 h-8">
                       {user.photoURL ? (
                         <img
@@ -350,45 +316,35 @@ const Navbar = () => {
                       )}
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                     </div>
-
                     <span className="font-medium">{user.displayName || user.email}</span>
-                    <ChevronDown size={18} />
-                  </button>
+                  </div>
 
-                  {dropdownOpen && (
-                    <div
-                      className={`mt-2 rounded-lg shadow-md py-2 ${
-                        darkMode ? "bg-gray-800" : "bg-white"
-                      }`}
-                    >
-                      <Link
-                        to="/profile"
-                        onClick={() => setIsOpen(false)}
-                        className={`block px-4 py-2 transition-colors duration-200 ${
-                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
-                        }`}
-                      >
-                        Profile
-                      </Link>
-                      <Link
-                        to="/settings"
-                        onClick={() => setIsOpen(false)}
-                        className={`block px-4 py-2 transition-colors duration-200 ${
-                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
-                        }`}
-                      >
-                        Settings
-                      </Link>
-                      <button
-                        onClick={() => setShowModal(true)}
-                        className={`w-full text-left px-4 py-2 text-red-600 transition-colors duration-200 ${
-                          darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
-                        }`}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    to="/settings"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-4 py-2 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className={`w-full text-left px-4 py-2 text-red-600 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
