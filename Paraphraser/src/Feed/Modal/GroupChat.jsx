@@ -1,6 +1,6 @@
 // src/Feed/Modal/GroupChat.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { FaComments, FaSmile } from "react-icons/fa";
+import { FaComments, FaSmile, FaPaperPlane, FaImage } from "react-icons/fa";
 import { useDarkMode } from "../../Theme/DarkModeContext";
 import {
   getDatabase,
@@ -10,8 +10,10 @@ import {
   update,
   get,
   set,
+  remove,
 } from "firebase/database";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const GROUP_PATH = "groups/arregmatica";
 const reactions = ["👍", "❤️", "😂", "😮", "😢"];
@@ -25,11 +27,55 @@ const GroupChat = ({ onClose }) => {
   const [readyPrompt, setReadyPrompt] = useState(true);
   const [activeReaction, setActiveReaction] = useState(null);
   const [onlineCount, setOnlineCount] = useState(0);
-  const listRef = useRef(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+
+  const listRef = useRef(null);
   const db = getDatabase();
   const auth = getAuth();
-  const currentUser = auth.currentUser;
+  const storage = getStorage();
+
+  const openLightbox = (imgs, idx) => {
+  setLightboxImages(imgs);
+  setCurrentIndex(idx);
+  setLightboxOpen(true);
+};
+
+const nextImage = () => {
+  setCurrentIndex((prev) => (prev + 1) % lightboxImages.length);
+};
+
+const prevImage = () => {
+  setCurrentIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+};
+
+
+  // Auth listener
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        const memberRef = ref(db, `${GROUP_PATH}/members/${user.uid}`);
+        const snap = await get(memberRef);
+        if (snap.exists()) {
+          await update(memberRef, {
+            username: user.displayName || user.email || "User",
+            avatar: user.photoURL || "",
+            lastSeen: Date.now(),
+          });
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    });
+    return () => unsub();
+  }, [auth, db]);
 
   // Auto-scroll
   useEffect(() => {
@@ -38,7 +84,7 @@ const GroupChat = ({ onClose }) => {
     }
   }, [messages]);
 
-  // Listen messages
+  // Listen to messages
   useEffect(() => {
     if (!joined) return;
     const messagesRef = ref(db, `${GROUP_PATH}/messages`);
@@ -56,7 +102,7 @@ const GroupChat = ({ onClose }) => {
     return () => unsubscribe();
   }, [joined, db]);
 
-  // Check membership
+  // Check if user already joined
   useEffect(() => {
     if (!currentUser) return;
     const membersRef = ref(db, `${GROUP_PATH}/members/${currentUser.uid}`);
@@ -68,27 +114,25 @@ const GroupChat = ({ onClose }) => {
     });
   }, [currentUser, db]);
 
-  // Listen to accounts for online users
+  // Online users from "scores"
   useEffect(() => {
-    const accountsRef = ref(db, "accounts");
-    const unsubscribe = onValue(accountsRef, (snapshot) => {
+    const scoresRef = ref(db, "scores");
+    const unsubscribe = onValue(scoresRef, (snapshot) => {
       if (!snapshot.exists()) {
         setOnlineCount(0);
+        setOnlineUsers([]);
         return;
       }
       const data = snapshot.val();
-      let count = 0;
-      const now = Date.now();
-      Object.values(data).forEach((acc) => {
-        if (acc.lastSignIn) {
-          const lastSeen = new Date(acc.lastSignIn).getTime();
-          // Online if active within 5 minutes
-          if (now - lastSeen <= 5 * 60 * 1000) {
-            count++;
-          }
-        }
-      });
-      setOnlineCount(count);
+      const usersArray = Object.keys(data).map((uid) => ({
+        uid,
+        fullName: data[uid].fullName || "User",
+        avatar: data[uid].avatar || "",
+        isOnline: data[uid].isOnline || false,
+      }));
+      const online = usersArray.filter((u) => u.isOnline);
+      setOnlineCount(online.length);
+      setOnlineUsers(online);
     });
     return () => unsubscribe();
   }, [db]);
@@ -128,8 +172,8 @@ const GroupChat = ({ onClose }) => {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const handleSend = async (imageUrls = []) => {
+    if (!input.trim() && imageUrls.length === 0) return;
     if (!currentUser) return alert("Please login to send messages.");
 
     const msg = {
@@ -137,6 +181,7 @@ const GroupChat = ({ onClose }) => {
       senderName: currentUser.displayName || currentUser.email || "User",
       avatar: currentUser.photoURL || "",
       text: input.trim(),
+      images: imageUrls, // array of uploaded image URLs
       timestamp: Date.now(),
       reactions: {},
       system: false,
@@ -156,15 +201,45 @@ const GroupChat = ({ onClose }) => {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    if (!currentUser) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const urls = [];
+      for (let file of files) {
+        const fileRef = sRef(storage, `messages/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        urls.push(url);
+      }
+      await handleSend(urls);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      alert("Failed to upload image.");
+    } finally {
+      setUploading(false);
+      e.target.value = null; // reset input
+    }
+  };
+
+  // Toggle reaction with proper group counting
   const handleReact = async (msgId, reaction) => {
     if (!currentUser) return;
-    const reactionPath = `${GROUP_PATH}/messages/${msgId}/reactions/${currentUser.uid}`;
-    const reactionRef = ref(db, reactionPath);
-    await set(reactionRef, {
-      emoji: reaction,
-      avatar: currentUser.photoURL || "",
-      name: currentUser.displayName || currentUser.email || "User",
-    });
+    const reactionRef = ref(db, `${GROUP_PATH}/messages/${msgId}/reactions/${currentUser.uid}`);
+    const snap = await get(reactionRef);
+
+    if (snap.exists() && snap.val().emoji === reaction) {
+      await remove(reactionRef); // Remove if clicked again
+    } else {
+      await set(reactionRef, {
+        emoji: reaction,
+        avatar: currentUser.photoURL || "",
+        name: currentUser.displayName || currentUser.email || "User",
+      });
+    }
     setActiveReaction(null);
   };
 
@@ -173,16 +248,105 @@ const GroupChat = ({ onClose }) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Group reactions by emoji
+  const groupReactions = (reactionsObj) => {
+    const grouped = {};
+    if (!reactionsObj) return grouped;
+    Object.values(reactionsObj).forEach((r) => {
+      if (!grouped[r.emoji]) grouped[r.emoji] = [];
+      grouped[r.emoji].push(r);
+    });
+    return grouped;
+  };
+
+const renderImages = (imgs) => {
+  if (!imgs || imgs.length === 0) return null;
+  const extra = imgs.length > 4 ? imgs.length - 4 : 0;
+  const displayImgs = imgs.slice(0, 4);
+
+  const handleClick = (idx) => openLightbox(imgs, idx);
+
+  if (displayImgs.length === 1) {
+    return (
+      <img
+        src={displayImgs[0]}
+        alt="msg-img"
+        className="rounded-xl w-11/12 max-h-40 mb-2 object-cover cursor-pointer"
+        onClick={() => handleClick(0)}
+      />
+    );
+  } else if (displayImgs.length === 2) {
+    return (
+      <div className="flex gap-1 mb-2">
+        {displayImgs.map((i, idx) => (
+          <img
+            key={idx}
+            src={i}
+            alt="msg-img"
+            className="w-[48%] max-h-32 rounded-xl object-cover cursor-pointer"
+            onClick={() => handleClick(idx)}
+          />
+        ))}
+      </div>
+    );
+  } else if (displayImgs.length === 3) {
+    return (
+      <div className="grid grid-cols-2 gap-1 mb-2">
+        <img
+          src={displayImgs[0]}
+          alt="msg-img"
+          className="col-span-2 max-h-32 rounded-xl object-cover cursor-pointer"
+          onClick={() => handleClick(0)}
+        />
+        {displayImgs.slice(1).map((i, idx) => (
+          <img
+            key={idx}
+            src={i}
+            alt="msg-img"
+            className="max-h-32 rounded-xl object-cover cursor-pointer"
+            onClick={() => handleClick(idx + 1)}
+          />
+        ))}
+      </div>
+    );
+  } else {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="grid grid-cols-2 gap-1 mb-2 relative">
+      {displayImgs.map((i, idx) => {
+        const isLast = idx === displayImgs.length - 1;
+        return (
+          <div key={idx} className="relative w-full h-full cursor-pointer" onClick={() => openLightbox(imgs, idx)}>
+            <img
+              src={i}
+              alt="msg-img"
+              className="max-h-32 rounded-xl object-cover w-full"
+            />
+            {isLast && extra > 0 && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl text-white text-xl font-bold">
+                +{extra}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+};
+
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-2 sm:px-0">
       <div
-        className={`rounded-2xl shadow-2xl max-w-2xl w-full h-[85vh] flex flex-col relative transition-colors duration-300 ${
-          darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
-        }`}
-      >
+  className={`rounded-2xl shadow-2xl w-full max-w-4xl h-[95vh] sm:h-[90vh] flex flex-col relative transition-colors duration-300 ${
+    darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
+  }`}
+>
+
         {/* Header */}
         <div
-          className={`flex items-center justify-between px-6 py-4 rounded-t-2xl ${
+          className={`flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 rounded-t-2xl ${
             darkMode ? "bg-gray-800" : "bg-gray-100"
           }`}
         >
@@ -191,15 +355,15 @@ const GroupChat = ({ onClose }) => {
               <FaComments />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Arregmatica Community</h2>
-              <p className="text-sm opacity-70">
+              <h2 className="text-base sm:text-lg font-bold">Arregmatica Community</h2>
+              <p className="text-xs sm:text-sm opacity-70">
                 {onlineCount} {onlineCount === 1 ? "member online" : "members online"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className={`transition-colors ${
+            className={`transition-colors text-lg ${
               darkMode
                 ? "text-gray-400 hover:text-gray-200"
                 : "text-gray-500 hover:text-gray-800"
@@ -227,9 +391,7 @@ const GroupChat = ({ onClose }) => {
               <button
                 onClick={() => setReadyPrompt(false)}
                 className={`px-6 py-3 rounded-xl transition ${
-                  darkMode
-                    ? "bg-gray-700 text-gray-100"
-                    : "bg-gray-200 text-gray-900"
+                  darkMode ? "bg-gray-700 text-gray-100" : "bg-gray-200 text-gray-900"
                 }`}
               >
                 Maybe later
@@ -251,13 +413,9 @@ const GroupChat = ({ onClose }) => {
                 </p>
               ) : (
                 messages.map((msg) => {
-                  // System message
                   if (msg.system) {
                     return (
-                      <div
-                        key={msg.id}
-                        className="flex flex-col items-center text-sm opacity-70"
-                      >
+                      <div key={msg.id} className="flex flex-col items-center text-sm opacity-70">
                         <p>{msg.text}</p>
                         <div className="w-full border-t border-gray-400/40 my-2"></div>
                       </div>
@@ -265,21 +423,13 @@ const GroupChat = ({ onClose }) => {
                   }
 
                   const isMe = msg.senderUid === (currentUser && currentUser.uid);
+                  const groupedReactions = groupReactions(msg.reactions);
+
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-3 items-start ${
-                        isMe ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      {/* Avatar */}
+                    <div key={msg.id} className={`flex gap-3 items-start ${isMe ? "justify-end" : "justify-start"}`}>
                       {!isMe &&
                         (msg.avatar ? (
-                          <img
-                            src={msg.avatar}
-                            alt="avatar"
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
+                          <img src={msg.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">
                             {msg.senderName ? msg.senderName.charAt(0).toUpperCase() : "U"}
@@ -287,49 +437,43 @@ const GroupChat = ({ onClose }) => {
                         ))}
 
                       {/* Bubble & Info */}
-                      <div
-                        className={`max-w-[70%] flex flex-col relative ${
-                          isMe ? "items-end" : "items-start"
-                        }`}
-                      >
-                        {/* Name */}
+                      <div className={`max-w-[70%] flex flex-col relative ${isMe ? "items-end" : "items-start"}`}>
                         <span className="text-xs font-semibold mb-1 opacity-70">
                           {msg.senderName || "User"}
                         </span>
 
                         {/* Bubble */}
-                        <div
-                          className={`px-4 py-2 rounded-2xl shadow break-words ${
-                            isMe
-                              ? "bg-green-500 text-white rounded-tr-none"
-                              : darkMode
-                              ? "bg-gray-800 text-gray-100 rounded-tl-none"
-                              : "bg-gray-200 text-gray-900 rounded-tl-none"
-                          }`}
-                        >
-                          {msg.text}
+                        <div className={`px-4 py-2 rounded-2xl shadow break-words whitespace-pre-wrap max-w-full sm:max-w-[100%] ${
+                          isMe
+                            ? "bg-green-500 text-white rounded-tr-none"
+                            : darkMode
+                            ? "bg-gray-800 text-gray-100 rounded-tl-none"
+                            : "bg-gray-200 text-gray-900 rounded-tl-none"
+                        }`}>
+                          {/* Images */}
+                          {renderImages(msg.images)}
 
-                          {/* Reactions Inside Bubble */}
-                          {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                            <div className="mt-2 flex gap-1 flex-wrap">
-                              {Object.values(msg.reactions).map((r, i) => (
-                                <span
-                                  key={i}
-                                  className="text-sm bg-black/10 px-2 py-1 rounded-full flex items-center gap-1"
-                                >
-                                  {r.emoji}
-                                  {r.avatar ? (
-                                    <img
-                                      src={r.avatar}
-                                      alt="reactor"
-                                      className="w-4 h-4 rounded-full"
-                                    />
-                                  ) : (
-                                    <span className="w-4 h-4 rounded-full bg-green-500 text-[10px] text-white flex items-center justify-center">
-                                      {r.name ? r.name.charAt(0).toUpperCase() : "U"}
-                                    </span>
-                                  )}
-                                </span>
+                          {/* Text */}
+                          {msg.text && <p>{msg.text}</p>}
+
+                          {/* Grouped Reactions */}
+                          {Object.keys(groupedReactions).length > 0 && (
+                            <div className="mt-2 flex gap-2 flex-wrap">
+                              {Object.entries(groupedReactions).map(([emoji, users], idx) => (
+                                <div key={idx} className="flex items-center gap-1 bg-black/10 px-2 py-1 rounded-full">
+                                  <span>{emoji}</span>
+                                  <div className="flex -space-x-1">
+                                    {users.slice(0, 3).map((u, i) => (
+                                      <img
+                                        key={i}
+                                        src={u.avatar || ""}
+                                        alt={u.name}
+                                        className="w-4 h-4 rounded-full border border-white"
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="text-[10px] opacity-70">{users.length}</span>
+                                </div>
                               ))}
                             </div>
                           )}
@@ -364,15 +508,11 @@ const GroupChat = ({ onClose }) => {
                                   </div>
                                 )}
                               </button>
-                              <span className="text-[10px] opacity-60">
-                                {formatTime(msg.timestamp)}
-                              </span>
+                              <span className="text-[10px] opacity-60">{formatTime(msg.timestamp)}</span>
                             </>
                           ) : (
                             <>
-                              <span className="text-[10px] opacity-60">
-                                {formatTime(msg.timestamp)}
-                              </span>
+                              <span className="text-[10px] opacity-60">{formatTime(msg.timestamp)}</span>
                               <button
                                 onClick={() =>
                                   setActiveReaction(activeReaction === msg.id ? null : msg.id)
@@ -387,7 +527,8 @@ const GroupChat = ({ onClose }) => {
                                     }`}
                                   >
                                     {reactions.map((r) => (
-                                      <button
+
+                                                                          <button
                                         key={r}
                                         onClick={() => handleReact(msg.id, r)}
                                         className="text-xl hover:scale-125 transition"
@@ -403,19 +544,12 @@ const GroupChat = ({ onClose }) => {
                         </div>
                       </div>
 
-                      {/* Avatar sa kanan pag ako yung sender */}
                       {isMe &&
                         (currentUser.photoURL ? (
-                          <img
-                            src={currentUser.photoURL}
-                            alt="my-avatar"
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
+                          <img src={currentUser.photoURL} alt="my-avatar" className="w-10 h-10 rounded-full object-cover" />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">
-                            {currentUser.displayName
-                              ? currentUser.displayName.charAt(0).toUpperCase()
-                              : "U"}
+                            {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : "U"}
                           </div>
                         ))}
                     </div>
@@ -424,12 +558,53 @@ const GroupChat = ({ onClose }) => {
               )}
             </div>
 
+            {lightboxOpen && (
+  <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
+    <button
+      onClick={() => setLightboxOpen(false)}
+      className="absolute top-5 right-5 text-white text-3xl"
+    >
+      ✕
+    </button>
+
+    <button
+      onClick={prevImage}
+      className="absolute left-5 text-white text-3xl"
+    >
+      ‹
+    </button>
+
+    <img
+      src={lightboxImages[currentIndex]}
+      alt="lightbox"
+      className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl"
+    />
+
+    <button
+      onClick={nextImage}
+      className="absolute right-5 text-white text-3xl"
+    >
+      ›
+    </button>
+  </div>
+)}
+
+
             {/* Input */}
-            <div
-              className={`flex items-center gap-3 px-6 py-4 rounded-b-2xl ${
-                darkMode ? "bg-gray-800" : "bg-gray-100"
-              }`}
-            >
+            <div className={`flex items-center gap-3 px-6 py-4 rounded-b-2xl ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}>
+              {/* Image upload button */}
+              <label className="cursor-pointer text-gray-500 hover:text-green-500">
+                <FaImage size={22} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={!joined || uploading}
+                />
+              </label>
+
               <input
                 type="text"
                 value={input}
@@ -444,11 +619,11 @@ const GroupChat = ({ onClose }) => {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
               />
               <button
-                onClick={handleSend}
-                disabled={!joined || !input.trim()}
-                className="px-5 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition disabled:opacity-60"
+                onClick={() => handleSend()}
+                disabled={!joined || (!input.trim() && !uploading)}
+                className="w-10 h-10 flex items-center justify-center bg-green-500 text-white rounded-full hover:bg-green-600 transition disabled:opacity-60"
               >
-                Send
+                <FaPaperPlane />
               </button>
             </div>
           </>
@@ -459,3 +634,4 @@ const GroupChat = ({ onClose }) => {
 };
 
 export default GroupChat;
+
