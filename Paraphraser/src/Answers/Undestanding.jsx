@@ -61,10 +61,12 @@ const HardPuzzle = () => {
     setLetters((l) => l.filter((_, i) => i !== index));
   };
 
+  // ✅ Isa-isang clear (huling letter lang)
   const handleClear = () => {
-    // Reset current attempt
-    setLetters(addDistractors(words[current].word));
-    setAnswer([]);
+    if (answer.length === 0) return;
+    const lastLetter = answer[answer.length - 1];
+    setAnswer((a) => a.slice(0, a.length - 1));
+    setLetters((l) => [...l, lastLetter].sort(() => Math.random() - 0.5));
   };
 
   const handleCheck = () => {

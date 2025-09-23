@@ -4,6 +4,7 @@ import { getDatabase, ref, onValue, update } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import FeedNavbar from "./FeedNavbar";
+import OnlinePeople from "./Online";
 import PostModal from "./Modal/Post";
 import ImageLightbox from "./ImageLightbox";
 import Comments from "./Modal/Comments";
@@ -215,7 +216,11 @@ const Feeds = () => {
           : "bg-gradient-to-br from-sky-50 to-sky-100 text-gray-900"
       }`}
     >
+     
       <FeedNavbar />
+       <div className="max-w-7xl mx-auto mt-6">
+  <OnlinePeople />
+</div>
       <div className="p-6 max-w-7xl mx-auto">
         {/* Create post + Join group chat + Ask Assistant */}
         <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">

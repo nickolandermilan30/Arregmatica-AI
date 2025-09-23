@@ -49,13 +49,23 @@ const App = () => {
                   <Route path="/humanize" element={<Humanize />} />
                   <Route path="/landingpage" element={<Landingpage />} />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="/score" element={<Score />} />
+                 
                 </Routes>
               </ProtectedRoute>
             }
           />
 
           {/* Protected routes WITHOUT Navbar */}
+
+           <Route
+            path="/score"
+            element={
+              <ProtectedRoute>
+                <Score />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/multiple-choice"
             element={
