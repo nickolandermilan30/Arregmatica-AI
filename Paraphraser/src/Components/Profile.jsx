@@ -126,31 +126,6 @@ const unsubscribeScores = onValue(scoresRef, (snapshot) => {
     }
   };
 
-const handleDeleteAccount = async () => {
-  try {
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      // ✅ Delete from scores
-      const userScoreRef = ref(db, `scores/${auth.currentUser.uid}`);
-      await set(userScoreRef, null);
-
-      // ✅ Delete from accounts
-      const userAccountRef = ref(db, `accounts/${auth.currentUser.uid}`);
-      await set(userAccountRef, null);
-
-      // ✅ Delete Firebase Auth account
-      await auth.currentUser.delete();
-
-      setModalMessage("Account deleted successfully.");
-      setShowModal(true);
-      setTimeout(() => (window.location.href = "/"), 2000);
-    }
-  } catch (error) {
-    console.error("Delete account failed:", error);
-    setModalMessage("Error: You may need to re-login before deleting your account.");
-    setShowModal(true);
-  }
-};
-
 
 const handleSaveName = async () => {
   try {
@@ -485,16 +460,7 @@ const handleAvatarChange = async (avatar) => {
           >
             Logout
           </button>
-          <button
-            onClick={handleDeleteAccount}
-            className={`w-full md:w-auto px-6 py-3 rounded-xl shadow-lg font-semibold transition-transform transform hover:scale-105 ${
-              darkMode
-                ? "bg-gray-600 hover:bg-gray-500 text-white"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-            }`}
-          >
-            Delete Account
-          </button>
+      
         </div>
       </div>
 

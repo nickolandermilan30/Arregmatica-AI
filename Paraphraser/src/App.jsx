@@ -12,14 +12,17 @@ import Register from "./Home/Register";
 import Profile from "./Components/Profile";
 import History from "./Components/History";
 import Stories from "./Feed/Feeds";
-import ProtectedRoute from "./hooks/ProtectedRoute"; 
+import ProtectedRoute from "./hooks/ProtectedRoute";
 import Dictionary from "./Components/Dictionary";
-import Humanize from "./Components/Humanize"; 
+import Humanize from "./Components/Humanize";
 import EssaChecker from "./Components/EssaChecker";
 import Landingpage from "./Components/LandingPage";
 import Settings from "./Components/Settings";
 import Score from "./Answers/Score";
-import { DarkModeProvider } from "./Theme/DarkModeContext"; // ✅ import global provider
+import { DarkModeProvider } from "./Theme/DarkModeContext";
+import AdminLogin from "./Home/AdminLogin";
+import AdminRegister from "./Home/AdminRegister";
+import Dashboard from "./Admin/Dashboard"; // ✅ import Dashboard
 
 const App = () => {
   return (
@@ -29,6 +32,8 @@ const App = () => {
           {/* Public routes */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin-register" element={<AdminRegister />} />
 
           {/* Protected routes with Navbar */}
           <Route
@@ -49,15 +54,13 @@ const App = () => {
                   <Route path="/humanize" element={<Humanize />} />
                   <Route path="/landingpage" element={<Landingpage />} />
                   <Route path="/settings" element={<Settings />} />
-                 
                 </Routes>
               </ProtectedRoute>
             }
           />
 
           {/* Protected routes WITHOUT Navbar */}
-
-           <Route
+          <Route
             path="/score"
             element={
               <ProtectedRoute>
@@ -65,7 +68,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/multiple-choice"
             element={
@@ -90,6 +92,22 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* ✅ Admin Dashboard route WITHOUT Navbar */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          
+
+
+
+
+
         </Routes>
       </Router>
     </DarkModeProvider>

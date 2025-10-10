@@ -213,6 +213,14 @@ const Navbar = () => {
                   >
                     Settings
                   </Link>
+                  <Link
+                    to="/admin-login"
+                    className={`block px-4 py-2 transition-colors duration-200 text-blue-600 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    Access Admin
+                  </Link>
                   <button
                     onClick={() => setShowModal(true)}
                     className={`w-full text-left px-4 py-2 text-red-600 transition-colors duration-200 ${
@@ -336,6 +344,15 @@ const Navbar = () => {
                     }`}
                   >
                     Settings
+                  </Link>
+                  <Link
+                    to="/admin-login"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-4 py-2 text-blue-600 transition-colors duration-200 ${
+                      darkMode ? "hover:bg-gray-700/60" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    Access Admin
                   </Link>
                   <button
                     onClick={() => setShowModal(true)}
